@@ -8,7 +8,6 @@ print(database_settings.database_url)
 engine = create_async_engine(
     database_settings.database_url,
     echo=True,  # Set to False in production
-    future=True,
     pool_pre_ping=True,  # Verify connections before using them
     pool_size=10,  # Connection pool size
     max_overflow=20,  # Max overflow connections
