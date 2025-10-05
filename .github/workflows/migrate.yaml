@@ -3,7 +3,7 @@ name: Migrate database
 on:
   push:
     branches: ["main"]
-    paths: ["alembic/versions/*"]
+    # paths: ["alembic/versions/*"]
   merge_group:
 
 jobs:
@@ -15,6 +15,9 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Install dotenvx
+        run: curl -sfS https://dotenvx.sh/install.sh | sh
+      
       - name: Migrate database
         env:
           DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
