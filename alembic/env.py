@@ -10,7 +10,7 @@ from src.core.database import Base
 from src.core.config import database_settings
 
 # import all the models here directly
-from src.users.models import User
+from src.users.models import User  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
