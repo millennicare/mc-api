@@ -1,0 +1,21 @@
+name: Migrate database
+
+on:
+  push:
+    branches: ["main"]
+    paths: ["alembic/versions/*"]
+  merge_group:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Migrate database
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
+        run: dotenvx run -- alembic upgrade head
