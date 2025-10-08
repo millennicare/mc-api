@@ -1,6 +1,7 @@
 import asyncio
 from logging.config import fileConfig
-
+import importlib
+import pkgutil
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -8,9 +9,6 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from src.core.database import Base
 from src.core.config import database_settings
-
-# import all the models here directly
-from src.users.models import User  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -24,6 +22,16 @@ config.set_main_option(
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+
+def import_models(package_name):
+    package = importlib.import_module(package_name)
+    for _, module_name, _ in pkgutil.walk_packages(
+        package.__path__, package.__name__ + "."
+    ):
+        importlib.import_module(module_name)
+
+
+import_models("src.models")
 target_metadata = Base.metadata
 
 

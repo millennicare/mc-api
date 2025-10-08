@@ -16,3 +16,8 @@ wheels/
 
 # ruff
 .ruff_cache
+
+# ropeproject
+.ropeproject
+
+.zed
