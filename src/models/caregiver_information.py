@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, ForeignKey, String
+import uuid
+
+from sqlalchemy import UUID, Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -7,8 +9,8 @@ from src.core.database import Base
 class CaregiverInformation(Base):
     __tablename__ = "caregiver_information"
 
-    user_id: Mapped[str] = mapped_column(
-        String(36),
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
         ForeignKey(
             "user.id",
             ondelete="CASCADE",
@@ -22,3 +24,6 @@ class CaregiverInformation(Base):
         Boolean, default=False, nullable=False
     )
     profile_picture: Mapped[str] = mapped_column(String, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<CaregiverInformation(user_id={self.user_id}, background_check_completed={self.background_check_completed}, onboarding_completed={self.onboarding_completed}, profile_picture={self.profile_picture})>"

@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String
+from sqlalchemy import UUID, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -25,8 +25,8 @@ class ContactStatusEnum(enum.Enum):
 class Contact(Base):
     __tablename__ = "contact"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID, primary_key=True, default=lambda: uuid.uuid4()
     )
     full_name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, nullable=False, index=True)
@@ -42,8 +42,8 @@ class Contact(Base):
         nullable=False,
         default=datetime.now(timezone.utc),
     )
-    user_id: Mapped[str] = mapped_column(
-        String(36),
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
         ForeignKey("user.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
     )

@@ -1,13 +1,13 @@
 from collections.abc import AsyncGenerator
+from datetime import datetime, timezone
 
+from sqlalchemy import DateTime
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from datetime import datetime, timezone
-from sqlalchemy import DateTime
 
 from src.core.config import database_settings
 
@@ -15,12 +15,11 @@ from src.core.config import database_settings
 engine = create_async_engine(
     database_settings.database_url,
     echo=True,  # Set to False in production
-    pool_pre_ping=True,  # Verify connections before using them
-    pool_size=10,  # Connection pool size
-    max_overflow=20,  # Max overflow connections
+    pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=20,
 )
 
-# Create async session factory
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
@@ -43,7 +42,6 @@ class Base(DeclarativeBase):
     )
 
 
-# Dependency for FastAPI routes
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
@@ -54,41 +52,3 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
-
-
-# Initialize database tables
-async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-
-# Example FastAPI application setup
-"""
-from fastapi import FastAPI, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-
-app = FastAPI()
-
-@app.on_event("startup")
-async def startup():
-    await init_db()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await engine.dispose()
-
-@app.get("/items/{item_id}")
-async def read_item(item_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Item).where(Item.id == item_id))
-    item = result.scalar_one_or_none()
-    return item
-
-@app.post("/items/")
-async def create_item(item: ItemCreate, db: AsyncSession = Depends(get_db)):
-    db_item = Item(**item.dict())
-    db.add(db_item)
-    await db.flush()
-    await db.refresh(db_item)
-    return db_item
-"""

@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, ForeignKey, String
+import uuid
+
+from sqlalchemy import UUID, Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -7,8 +9,8 @@ from src.core.database import Base
 class CareseekerInformation(Base):
     __tablename__ = "careseeker_information"
 
-    user_id: Mapped[str] = mapped_column(
-        String(36),
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
         ForeignKey("user.id", ondelete="CASCADE", onupdate="CASCADE"),
         primary_key=True,
         nullable=False,

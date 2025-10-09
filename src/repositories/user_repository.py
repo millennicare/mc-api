@@ -10,7 +10,7 @@ class UserRepository:
         self.db = db
 
     async def create_user(self, values: CreateUserSchema) -> User:
-        statement = insert(User).values(values.model_dump_json()).returning(User)
+        statement = insert(User).values(**values.model_dump()).returning(User)
         result = await self.db.execute(statement)
         await self.db.commit()
         return result.scalar_one()
@@ -26,5 +26,5 @@ class UserRepository:
 
     async def get_users(self, skip: int, limit: int) -> list[User]:
         statement = select(User).limit(limit).offset(skip)
-        result = await self.db.execute(statement)
-        return result.scalars()
+        result = await self.db.scalars(statement)
+        return list(result.all())

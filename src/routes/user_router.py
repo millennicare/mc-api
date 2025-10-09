@@ -3,8 +3,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 from fastapi.params import Path
-from src.schemas.user_schemas import UserSchema
+
 from src.core.dependencies.user_dependencies import T_UserDeps
+from src.schemas.user_schemas import UserSchema
 
 router = APIRouter(tags=["user"], prefix="/api/users")
 

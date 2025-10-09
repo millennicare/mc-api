@@ -8,7 +8,16 @@ from src.schemas.auth_schemas import SignInSchema, SignUpSchema
 router = APIRouter(tags=["auth"], prefix="/api/auth")
 
 
-@router.post("/sign-up", status_code=HTTPStatus.CREATED)
+@router.post(
+    "/sign-up",
+    status_code=HTTPStatus.CREATED,
+    responses={
+        201: {"description": "User created"},
+        401: {},
+        404: {"description": "Role not found"},
+        409: {"description": "A user already exists with this email address"},
+    },
+)
 async def sign_up(body: SignUpSchema, deps: T_AuthDeps):
     return await deps.service.sign_up(body)
 

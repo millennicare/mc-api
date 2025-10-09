@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import UUID, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -10,11 +10,11 @@ from src.core.database import Base
 class CaregiverAvailability(Base):
     __tablename__ = "caregiver_availability"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID, primary_key=True, default=lambda: uuid.uuid4()
     )
-    caregiver_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("caregiver_information.user_id"), nullable=False
+    caregiver_id: Mapped[uuid.UUID] = mapped_column(
+        UUID, ForeignKey("caregiver_information.user_id"), nullable=False
     )
     start_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False

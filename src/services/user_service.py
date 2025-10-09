@@ -16,4 +16,4 @@ class UserService:
 
     async def get_users(self, skip: int, limit: int) -> list[UserSchema]:
         users = await self.user_repository.get_users(skip=skip, limit=limit)
-        return [UserSchema(**user) for user in users]
+        return [UserSchema.model_validate(user) for user in users]

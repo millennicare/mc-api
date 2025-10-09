@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String
+from sqlalchemy import UUID, DateTime, Enum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
@@ -18,8 +18,8 @@ class AppointmentStatusEnum(enum.Enum):
 class Appointment(Base):
     __tablename__ = "appointment"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID, primary_key=True, default=lambda: uuid.uuid4()
     )
     start_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -28,14 +28,14 @@ class Appointment(Base):
     status: Mapped[AppointmentStatusEnum] = mapped_column(
         Enum(AppointmentStatusEnum), nullable=False
     )
-    careseeker_id: Mapped[str] = mapped_column(
-        String(36),
+    careseeker_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
         ForeignKey("careseeker_information.user_id"),
         nullable=False,
         index=True,
     )
-    caregiver_id: Mapped[str] = mapped_column(
-        String(36),
+    caregiver_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
         ForeignKey("caregiver_information.user_id"),
         nullable=False,
         index=True,

@@ -7,8 +7,14 @@ caregiver_to_specialty = Table(
     Base.metadata,
     Column(
         "caregiver_information_id",
-        ForeignKey("caregiver_information.user_id"),
+        ForeignKey(
+            "caregiver_information.user_id", onupdate="CASCADE", ondelete="CASCADE"
+        ),
         primary_key=True,
     ),
-    Column("specialty_id", ForeignKey("specialty.id"), primary_key=True),
+    Column(
+        "specialty_id",
+        ForeignKey("specialty.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+    ),
 )
