@@ -3,7 +3,7 @@ name: Migrate database
 on:
   push:
     branches: ["main"]
-    paths: ["alembic/versions/*"]
+    # paths: ["alembic/versions/*"]
   merge_group:
 
 jobs:
