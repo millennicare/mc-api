@@ -19,6 +19,8 @@ from src.schemas.session_schemas import CreateSessionSchema
 from src.schemas.user_schemas import CreateUserSchema
 from src.schemas.verification_code_schemas import CreateVerificationCodeSchema
 
+from argon2 import PasswordHasher
+
 
 class AuthService:
     def __init__(
@@ -65,7 +67,7 @@ class AuthService:
             CreateAccountSchema(
                 account_id="email",
                 provider_id="credentials",
-                password=body.password,
+                password=self._hash_password(body.password),
                 user_id=user.id,
             )
         )
@@ -101,7 +103,7 @@ class AuthService:
 
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
-    async def sign_in(self, body: SignInSchema):
+    async def sign_in(self, body: SignInSchema) -> TokenResponse:
         user = await self.user_repository.get_user_by_email(email=body.email)
         if user is None:
             raise HTTPException(
@@ -109,13 +111,66 @@ class AuthService:
                 detail="Incorrect email or password",
             )
 
-        # this shouldn't happen but get the role and if it doesn't exist, throw
-        role = await self.role_repository.get_role_by_name(name=str(body.role))
+        role = await self.role_repository.get_role_by_name(name=body.role.value)
         if role is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
-                detail=f"Role {str(body.role)} not found",
+                detail=f"Role {body.role.value} not found",
             )
+
+        # find the users account with credentials
+        accounts = await self.account_repository.get_accounts_by_user_id(
+            user_id=user.id
+        )
+        account = next(
+            (acc for acc in accounts if acc.provider_id == "credentials"), None
+        )
+        if account is None:
+            # when this occurs, a user has made an account with a different provider such as google or facebook
+            # they must sign in with that provider if they do not have a password setup
+            raise HTTPException(
+                status_code=HTTPStatus.UNAUTHORIZED,
+                detail="Incorrect email or password",
+            )
+
+        if not self._validate_password(account.password, body.password):
+            raise HTTPException(
+                status_code=HTTPStatus.UNAUTHORIZED,
+                detail="Incorrect email or password",
+            )
+
+        # next, find if the user has the role they are trying to sign in as
+        user_has_role = await self.user_to_role_repository.user_has_role(
+            user_id=user.id, role_id=role.id
+        )
+        if not user_has_role:
+            raise HTTPException(
+                status_code=HTTPStatus.FORBIDDEN, detail="User does not have role"
+            )
+
+        # then, create a session and create tokens
+        session = await self.session_repository.create_session(
+            CreateSessionSchema(
+                expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+                user_id=user.id,
+                role=body.role.value,
+            )
+        )
+        access_token = self.jwt_client.create_access_token(
+            user_id=user.id, session_id=session.id, role=body.role
+        )
+        refresh_token = self.jwt_client.create_refresh_token(
+            user_id=user.id, session_id=session.id
+        )
+        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
     def _generate_verification_code(self) -> str:
         return str(random.randint(100000, 999999))
+
+    def _validate_password(self, hash: str, password: str) -> bool:
+        ph = PasswordHasher()
+        return ph.verify(hash, password)
+
+    def _hash_password(self, password: str) -> str:
+        ph = PasswordHasher()
+        return ph.hash(password)

@@ -1,4 +1,5 @@
-from sqlalchemy import insert
+from uuid import UUID
+from sqlalchemy import insert, select
 
 from src.core.deps import T_Database
 from src.models.account import Account
@@ -13,3 +14,8 @@ class AccountRepository:
         statement = insert(Account).values(**values.model_dump())
         print(values.model_dump())
         await self.db.execute(statement)
+
+    async def get_accounts_by_user_id(self, user_id: UUID) -> list[Account]:
+        statement = select(Account).where(Account.user_id == user_id)
+        result = await self.db.scalars(statement)
+        return list(result.all())

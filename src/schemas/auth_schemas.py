@@ -1,5 +1,3 @@
-from typing import Literal
-
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from src.core.constants import PASSWORD_REGEX
@@ -25,7 +23,7 @@ class SignUpSchema(BaseModel):
 class SignInSchema(BaseModel):
     email: EmailStr
     password: str
-    role: Literal["careseeker", "caregiver", "admin"]
+    role: SessionRoleEnum
 
 
 class TokenResponse(BaseModel):
