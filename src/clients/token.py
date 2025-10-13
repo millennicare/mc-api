@@ -7,7 +7,6 @@ import jwt
 from fastapi import HTTPException
 
 from src.core.config import jwt_settings
-from src.models.session import SessionRoleEnum
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 30
@@ -21,7 +20,7 @@ class JWTClient:
         self,
         user_id: UUID,
         session_id: UUID,
-        role: SessionRoleEnum,
+        roles: list[str],
         expires_delta: Optional[timedelta] = None,
     ) -> str:
         """Create a JWT access token with session ID embedded"""
@@ -35,7 +34,7 @@ class JWTClient:
         payload = {
             "sub": str(user_id),
             "sessionId": str(session_id),
-            "role": role.value,
+            "roles": roles,
             "exp": expire,
             "iat": datetime.now(timezone.utc),
             "type": "access",
@@ -69,7 +68,7 @@ class JWTClient:
     def decode_token(self, token: str) -> dict:
         """Decode and validate JWT token"""
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=["H256"])
+            payload = jwt.decode(token, self.secret_key, algorithms=["HS256"])
             return payload
         except jwt.ExpiredSignatureError:
             raise HTTPException(

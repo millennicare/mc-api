@@ -1,4 +1,5 @@
-from sqlalchemy import delete, insert, select
+from uuid import UUID
+from sqlalchemy import delete, insert, update, select
 
 from src.core.deps import T_Database
 from src.models.user import User
@@ -28,3 +29,11 @@ class UserRepository:
         statement = select(User).limit(limit).offset(skip)
         result = await self.db.scalars(statement)
         return list(result.all())
+
+    async def update_user(self, user_id: UUID, values: dict) -> User:
+        statement = (
+            update(User).where(User.id == user_id).values(**values).returning(User)
+        )
+        result = await self.db.execute(statement)
+        await self.db.commit()
+        return result.scalar_one()

@@ -1,6 +1,7 @@
 import random
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
+from uuid import UUID
 
 from fastapi import HTTPException
 
@@ -14,12 +15,13 @@ from src.repositories.user_repository import UserRepository
 from src.repositories.user_to_role_repository import UserToRoleRepository
 from src.repositories.verification_code_repository import VerificationCodeRepository
 from src.schemas.account_schemas import CreateAccountSchema
-from src.schemas.auth_schemas import SignInSchema, SignUpSchema, TokenResponse
+from src.schemas.auth_schemas import SignUpSchema, TokenResponse
 from src.schemas.session_schemas import CreateSessionSchema
-from src.schemas.user_schemas import CreateUserSchema
-from src.schemas.verification_code_schemas import CreateVerificationCodeSchema
+from src.schemas.user_schemas import CreateUserSchema, UserSchema
 
 from argon2 import PasswordHasher
+
+from src.schemas.verification_code_schemas import CreateVerificationCodeSchema
 
 
 class AuthService:
@@ -43,19 +45,13 @@ class AuthService:
         self.email_client = email_client
         self.jwt_client = jwt_client
 
-    async def sign_up(self, body: SignUpSchema) -> TokenResponse:
+    async def sign_up(self, body: SignUpSchema) -> UserSchema:
         existing_user = await self.user_repository.get_user_by_email(email=body.email)
         if existing_user:
+            # the frontend should try to let the user sign in if this occurs
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
                 detail="A user with this email address already exists",
-            )
-
-        role = await self.role_repository.get_role_by_name(body.role.value)
-        if role is None:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=f"Invald role {body.role}",
             )
 
         create_user_schema = CreateUserSchema(
@@ -72,51 +68,40 @@ class AuthService:
             )
         )
 
-        await self.user_to_role_repository.create_user_to_role(
-            user_id=user.id, role_id=role.id
-        )
+        for role in body.roles:
+            role = await self.role_repository.get_role_by_name(name=role)
+            if role is not None:
+                await self.user_to_role_repository.create_user_to_role(
+                    user_id=user.id,
+                    role_id=role.id,
+                )
 
-        session = await self.session_repository.create_session(
-            CreateSessionSchema(
-                expires_at=datetime.now(timezone.utc) + timedelta(days=30),
-                user_id=user.id,
-                role=body.role,
-            )
-        )
-        access_token = self.jwt_client.create_access_token(
-            user_id=user.id, session_id=session.id, role=body.role
-        )
-        refresh_token = self.jwt_client.create_refresh_token(
-            user_id=user.id, session_id=session.id
-        )
+        return UserSchema.model_validate(user)
 
-        code = self._generate_verification_code()
-        await self.verification_code_repository.create_verification_code(
-            CreateVerificationCodeSchema(
-                value=code,
-                expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
-                user_id=user.id,
-                identifier=VerificationCodeEnum.VERIFY_EMAIL,
-            )
-        )
-        self.email_client.send_verification_email(email=body.email, code=code)
-
-        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
-
-    async def sign_in(self, body: SignInSchema) -> TokenResponse:
-        user = await self.user_repository.get_user_by_email(email=body.email)
+    async def sign_in(self, email: str, password: str) -> TokenResponse:
+        user = await self.user_repository.get_user_by_email(email=email)
         if user is None:
             raise HTTPException(
                 status_code=HTTPStatus.UNAUTHORIZED,
                 detail="Incorrect email or password",
             )
 
-        role = await self.role_repository.get_role_by_name(name=body.role.value)
-        if role is None:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=f"Role {body.role.value} not found",
+        # if the user's email is not yet verified, create a verification code and send
+        # however, if there is already an existing verification code for this purpose, delete and send another
+        if not user.email_verified:
+            code = self._generate_verification_code()
+            await self.verification_code_repository.delete_verification_code(
+                user_id=user.id, identifier=VerificationCodeEnum.VERIFY_EMAIL
             )
+            await self.verification_code_repository.create_verification_code(
+                CreateVerificationCodeSchema(
+                    value=code,
+                    user_id=user.id,
+                    expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
+                    identifier=VerificationCodeEnum.VERIFY_EMAIL,
+                )
+            )
+            self.email_client.send_verification_email(email=user.email, code=code)
 
         # find the users account with credentials
         accounts = await self.account_repository.get_accounts_by_user_id(
@@ -133,36 +118,59 @@ class AuthService:
                 detail="Incorrect email or password",
             )
 
-        if not self._validate_password(account.password, body.password):
+        if not self._validate_password(account.password, password):
             raise HTTPException(
                 status_code=HTTPStatus.UNAUTHORIZED,
                 detail="Incorrect email or password",
             )
 
-        # next, find if the user has the role they are trying to sign in as
-        user_has_role = await self.user_to_role_repository.user_has_role(
-            user_id=user.id, role_id=role.id
-        )
-        if not user_has_role:
-            raise HTTPException(
-                status_code=HTTPStatus.FORBIDDEN, detail="User does not have role"
-            )
+        # get the roles that user has and add all of them to the token
+        roles = await self.role_repository.get_roles_by_user_id(user_id=user.id)
 
         # then, create a session and create tokens
         session = await self.session_repository.create_session(
             CreateSessionSchema(
                 expires_at=datetime.now(timezone.utc) + timedelta(days=30),
                 user_id=user.id,
-                role=body.role.value,
             )
         )
         access_token = self.jwt_client.create_access_token(
-            user_id=user.id, session_id=session.id, role=body.role
+            user_id=user.id, session_id=session.id, roles=[role.name for role in roles]
         )
         refresh_token = self.jwt_client.create_refresh_token(
             user_id=user.id, session_id=session.id
         )
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+
+    async def verify_email(self, code: str, user_id: UUID) -> None:
+        verification_code = (
+            await self.verification_code_repository.get_verification_code(
+                user_id=user_id
+            )
+        )
+        if verification_code is None:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Verification code not found",
+            )
+
+        if (
+            verification_code.identifier != VerificationCodeEnum.VERIFY_EMAIL
+            or verification_code.value != code
+            or verification_code.expires_at < datetime.now(timezone.utc)
+        ):
+            raise HTTPException(
+                status_code=HTTPStatus.UNAUTHORIZED,
+                detail="Invalid verification code",
+            )
+
+        await self.verification_code_repository.delete_verification_code(
+            user_id=user_id, identifier=VerificationCodeEnum.VERIFY_EMAIL
+        )
+
+        await self.user_repository.update_user(
+            user_id=user_id, values={"email_verified": True}
+        )
 
     def _generate_verification_code(self) -> str:
         return str(random.randint(100000, 999999))

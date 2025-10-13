@@ -1,4 +1,4 @@
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 
 from src.core.deps import T_Database
 from src.models.session import Session
@@ -13,3 +13,8 @@ class SessionRepository:
         statement = insert(Session).values(**values.model_dump()).returning(Session)
         result = await self.db.execute(statement)
         return result.scalar_one()
+
+    async def get_session_by_id(self, session_id) -> Session | None:
+        statement = select(Session).where(Session.id == session_id)
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()

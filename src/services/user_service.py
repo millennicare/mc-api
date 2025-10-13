@@ -1,6 +1,7 @@
+from uuid import UUID
 from src.models.user import User
 from src.repositories.user_repository import UserRepository
-from src.schemas.user_schemas import CreateUserSchema, UserSchema
+from src.schemas.user_schemas import CreateUserSchema, UpdateUserSchema, UserSchema
 
 
 class UserService:
@@ -17,3 +18,8 @@ class UserService:
     async def get_users(self, skip: int, limit: int) -> list[UserSchema]:
         users = await self.user_repository.get_users(skip=skip, limit=limit)
         return [UserSchema.model_validate(user) for user in users]
+
+    async def update_user(self, user_id: UUID, body: UpdateUserSchema):
+        # update the user's field as usual
+        # update the user's roles if roles_to_add or roles_to_remove are provided
+        pass

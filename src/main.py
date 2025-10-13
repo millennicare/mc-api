@@ -83,6 +83,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
 # TODO: make this actually point to the frontend dynamically
 origins = [
     "http://localhost",

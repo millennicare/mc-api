@@ -55,7 +55,7 @@ class EmailClient:
         to: str,
         subject: str,
         html: str,
-    ) -> dict:
+    ):
         """
         Internal method to send email via Resend.
 
@@ -63,9 +63,6 @@ class EmailClient:
             to: Recipient email address
             subject: Email subject
             html: Rendered HTML content
-
-        Returns:
-            Response from Resend API
         """
         params: resend.Emails.SendParams = {
             "from": self.from_email,
@@ -73,68 +70,59 @@ class EmailClient:
             "subject": subject,
             "html": html,
         }
-        return resend.Emails.send(params)
+        resend.Emails.send(params)
 
-    def send_verification_email(self, email: str, code: str) -> dict:
+    def send_verification_email(self, email: str, code: str) -> None:
         """
         Send email verification code.
 
         Args:
             email: Recipient email address
             code: Verification code
-
-        Returns:
-            Response from Resend API
         """
         html = self._render_template(
             "email_verification.html",
             email=email,
             code=code,
         )
-        return self._send_email(
+        self._send_email(
             to=email,
             subject="Verify your email address",
             html=html,
         )
 
-    def send_password_reset_email(self, email: str, link: str) -> dict:
+    def send_password_reset_email(self, email: str, link: str) -> None:
         """
         Send password reset link.
 
         Args:
             email: Recipient email address
             link: Password reset link
-
-        Returns:
-            Response from Resend API
         """
         html = self._render_template(
             "reset_password.html",
             email=email,
             link=link,
         )
-        return self._send_email(
+        self._send_email(
             to=email,
             subject="Reset your Millennicare password",
             html=html,
         )
 
-    def send_waitlist_confirmation(self, email: str, name: str) -> dict:
+    def send_waitlist_confirmation(self, email: str, name: str) -> None:
         """
         Send waitlist confirmation.
 
         Args:
             email: Recipient email address
             name: Recipient name
-
-        Returns:
-            Response from Resend API
         """
         html = self._render_template(
             "waitlist_confirmation.html",
             name=name,
         )
-        return self._send_email(
+        self._send_email(
             to=email,
             subject="Welcome to the Millennicare Waitlist",
             html=html,

@@ -1,17 +1,10 @@
-import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import UUID, DateTime, Enum, ForeignKey
+from sqlalchemy import UUID, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.database import Base
-
-
-class SessionRoleEnum(str, enum.Enum):
-    CARESEEKER = "careseeker"
-    CAREGIVER = "caregiver"
-    ADMIN = "admin"
 
 
 class Session(Base):
@@ -29,7 +22,6 @@ class Session(Base):
         nullable=False,
         index=True,
     )
-    role: Mapped[SessionRoleEnum] = mapped_column(Enum(SessionRoleEnum), nullable=False)
 
     def __repr__(self) -> str:
-        return f"<Session(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at}, role={self.role})>"
+        return f"<Session(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at})>"
