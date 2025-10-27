@@ -5,14 +5,16 @@ from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
 from src.core.dependencies.auth_dependencies import T_AuthDeps
-from src.core.deps import T_CurrentUser
+from src.core.deps import T_CurrentUser, T_Session
 from src.schemas.auth_schemas import (
+    ForgotPasswordSchema,
+    RefreshTokenRequestSchema,
+    ResetPasswordSchema,
     SignUpSchema,
     TokenResponse,
     VerifySchema,
-    ForgotPasswordSchema,
-    ResetPasswordSchema,
 )
+from src.schemas.user_schemas import UserSchema
 
 router = APIRouter(tags=["auth"], prefix="/api/auth")
 
@@ -25,6 +27,7 @@ router = APIRouter(tags=["auth"], prefix="/api/auth")
         404: {"description": "Role not found"},
         409: {"description": "A user already exists with this email address"},
     },
+    response_model=UserSchema,
 )
 async def sign_up(body: SignUpSchema, deps: T_AuthDeps):
     return await deps.service.sign_up(body)
@@ -39,7 +42,7 @@ async def sign_in(
 
 @router.post("/verify", status_code=HTTPStatus.OK)
 async def verify(body: VerifySchema, deps: T_AuthDeps, user: T_CurrentUser):
-    return await deps.service.verify_email(code=body.code, user_id=user["user_id"])
+    return await deps.service.verify_email(code=body.code, user_id=user.id)
 
 
 @router.post("/forgot-password", status_code=HTTPStatus.OK)
@@ -52,11 +55,16 @@ async def reset_password(body: ResetPasswordSchema, deps: T_AuthDeps):
     return await deps.service.reset_password(body)
 
 
-@router.post("/refresh", status_code=HTTPStatus.OK)
-async def refresh_token(token: str, deps: T_AuthDeps):
-    return await deps.service.refresh_token(token)
+@router.post("/refresh", status_code=HTTPStatus.OK, response_model=TokenResponse)
+async def refresh_token(body: RefreshTokenRequestSchema, deps: T_AuthDeps):
+    return await deps.service.refresh_token(refresh_token=body.refresh_token)
 
 
 @router.post("/sign-out", status_code=HTTPStatus.OK)
-async def sign_out(token: str, deps: T_AuthDeps):
-    return await deps.service.sign_out(token)
+async def sign_out(session: T_Session, deps: T_AuthDeps):
+    return await deps.service.sign_out(session_id=session.id)
+
+
+@router.get("/me", status_code=HTTPStatus.OK, response_model=UserSchema)
+async def get_current_user(user: T_CurrentUser):
+    return user

@@ -1,8 +1,7 @@
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Query
-from fastapi.params import Path
+from fastapi import APIRouter, Path, Query
 
 from src.core.dependencies.user_dependencies import T_UserDeps
 from src.schemas.user_schemas import UpdateUserSchema, UserSchema
@@ -15,7 +14,6 @@ async def delete_user(
     user_id: Annotated[str, Path(title="The id of the user")],
     deps: T_UserDeps,
 ):
-    print(f"user_id: {user_id}")
     return await deps.service.delete_user(user_id)
 
 

@@ -1,5 +1,8 @@
 import enum
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from src.core.constants import PASSWORD_REGEX
 
@@ -8,6 +11,22 @@ class RoleEnum(str, enum.Enum):
     ADMIN = "admin"
     CARESEEKER = "careseeker"
     CAREGIVER = "caregiver"
+
+
+class TokenBase(BaseModel):
+    sub: str
+    sessionId: str
+    exp: datetime
+    iat: datetime
+
+
+class AccessToken(TokenBase):
+    roles: list[str]
+    type: Literal["access"]
+
+
+class RefreshToken(TokenBase):
+    type: Literal["refresh"]
 
 
 class SignUpSchema(BaseModel):
@@ -27,8 +46,10 @@ class SignUpSchema(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    accessToken: str = Field(alias="access_token")
-    refreshtoken: str = Field(alias="refresh_token")
+    model_config = ConfigDict(populate_by_name=True)
+
+    access_token: str = Field(alias="accessToken")
+    refresh_token: str = Field(alias="refreshToken")
 
 
 class VerifySchema(BaseModel):
@@ -51,3 +72,9 @@ class ResetPasswordSchema(BaseModel):
                 "Password must be 8-64 characters long, contain at least one uppercase letter and one special character (!@#$%^&*)."
             )
         return value
+
+
+class RefreshTokenRequestSchema(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    refresh_token: str = Field(alias="refreshToken")

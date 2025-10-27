@@ -1,15 +1,16 @@
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Optional
+from typing import Optional, Type, TypeVar
 from uuid import UUID
 
 import jwt
 from fastapi import HTTPException
 
 from src.core.config import jwt_settings
+from src.core.constants import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
+from src.schemas.auth_schemas import AccessToken, RefreshToken, TokenBase
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 30
+T = TypeVar("T", bound=TokenBase)
 
 
 class JWTClient:
@@ -65,11 +66,11 @@ class JWTClient:
         token = jwt.encode(payload, self.secret_key, algorithm="HS256")
         return token
 
-    def decode_token(self, token: str) -> dict:
-        """Decode and validate JWT token"""
+    def decode_token(self, token: str, token_class: Type[T]) -> T:
+        """Generic method to decode JWT tokens into AccessToken or RefreshToken"""
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=["HS256"])
-            return payload
+            return token_class(**payload)
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=HTTPStatus.UNAUTHORIZED, detail="Token has expired"
@@ -78,3 +79,11 @@ class JWTClient:
             raise HTTPException(
                 status_code=HTTPStatus.UNAUTHORIZED, detail="Invalid token"
             )
+
+    def decode_access_token(self, token: str) -> AccessToken:
+        """Decode an access token"""
+        return self.decode_token(token, AccessToken)
+
+    def decode_refresh_token(self, token: str) -> RefreshToken:
+        """Decode a refresh token"""
+        return self.decode_token(token, RefreshToken)

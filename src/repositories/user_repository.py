@@ -1,5 +1,6 @@
 from uuid import UUID
-from sqlalchemy import delete, insert, update, select
+
+from sqlalchemy import delete, insert, select, update
 
 from src.core.deps import T_Database
 from src.models.user import User
@@ -9,6 +10,11 @@ from src.schemas.user_schemas import CreateUserSchema
 class UserRepository:
     def __init__(self, db: T_Database):
         self.db = db
+
+    async def get_user(self, user_id: str) -> User | None:
+        statement = select(User).where(User.id == user_id)
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()
 
     async def create_user(self, values: CreateUserSchema) -> User:
         statement = insert(User).values(**values.model_dump()).returning(User)

@@ -1,4 +1,8 @@
+from http import HTTPStatus
 from uuid import UUID
+
+from fastapi import HTTPException
+
 from src.models.user import User
 from src.repositories.user_repository import UserRepository
 from src.schemas.user_schemas import CreateUserSchema, UpdateUserSchema, UserSchema
@@ -23,3 +27,11 @@ class UserService:
         # update the user's field as usual
         # update the user's roles if roles_to_add or roles_to_remove are provided
         pass
+
+    async def get_user(self, user_id: str) -> UserSchema:
+        user = await self.user_repository.get_user(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="User not found"
+            )
+        return UserSchema.model_validate(user)

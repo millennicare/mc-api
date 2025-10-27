@@ -1,12 +1,14 @@
 import random
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from uuid import UUID
 
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from fastapi import HTTPException
 
 from src.clients.email import EmailClient
 from src.clients.token import JWTClient
+from src.core.constants import SESSION_EXPIRE_DAYS
 from src.models.verification_code import VerificationCodeEnum
 from src.repositories.account_repository import AccountRepository
 from src.repositories.role_repository import RoleRepository
@@ -18,9 +20,6 @@ from src.schemas.account_schemas import CreateAccountSchema
 from src.schemas.auth_schemas import SignUpSchema, TokenResponse
 from src.schemas.session_schemas import CreateSessionSchema
 from src.schemas.user_schemas import CreateUserSchema, UserSchema
-
-from argon2 import PasswordHasher
-
 from src.schemas.verification_code_schemas import CreateVerificationCodeSchema
 
 
@@ -118,7 +117,9 @@ class AuthService:
                 detail="Incorrect email or password",
             )
 
-        if not self._validate_password(account.password, password):
+        try:
+            self._validate_password(account.password, password)
+        except VerifyMismatchError:
             raise HTTPException(
                 status_code=HTTPStatus.UNAUTHORIZED,
                 detail="Incorrect email or password",
@@ -130,7 +131,8 @@ class AuthService:
         # then, create a session and create tokens
         session = await self.session_repository.create_session(
             CreateSessionSchema(
-                expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+                expires_at=datetime.now(timezone.utc)
+                + timedelta(days=SESSION_EXPIRE_DAYS),
                 user_id=user.id,
             )
         )
@@ -142,7 +144,7 @@ class AuthService:
         )
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
-    async def verify_email(self, code: str, user_id: UUID) -> None:
+    async def verify_email(self, code: str, user_id: str) -> None:
         verification_code = (
             await self.verification_code_repository.get_verification_code(
                 user_id=user_id
@@ -151,7 +153,7 @@ class AuthService:
         if verification_code is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
-                detail="Verification code not found",
+                detail="Verification code is invalid or expired.",
             )
 
         if (
@@ -161,7 +163,7 @@ class AuthService:
         ):
             raise HTTPException(
                 status_code=HTTPStatus.UNAUTHORIZED,
-                detail="Invalid verification code",
+                detail="Verification code is invalid or expired.",
             )
 
         await self.verification_code_repository.delete_verification_code(
@@ -171,6 +173,40 @@ class AuthService:
         await self.user_repository.update_user(
             user_id=user_id, values={"email_verified": True}
         )
+
+    async def sign_out(self, session_id: str) -> None:
+        await self.session_repository.delete_session(session_id=session_id)
+
+    async def refresh_token(self, refresh_token: str) -> TokenResponse:
+        # no need to throw since the decoding method throws
+        decoded_refresh_token = self.jwt_client.decode_refresh_token(refresh_token)
+        user_id = decoded_refresh_token.sub
+        session_id = decoded_refresh_token.sessionId
+
+        session = await self.session_repository.get_session_by_id(session_id=session_id)
+        if session is None:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Session not found",
+            )
+
+        await self.session_repository.update_session(
+            session_id=session_id,
+            values={
+                "expires_at": datetime.now(timezone.utc)
+                + timedelta(days=SESSION_EXPIRE_DAYS)
+            },
+        )
+
+        roles = await self.role_repository.get_roles_by_user_id(user_id=user_id)
+
+        access_token = self.jwt_client.create_access_token(
+            user_id=user_id, session_id=session_id, roles=[role.name for role in roles]
+        )
+        refresh_token = self.jwt_client.create_refresh_token(
+            user_id=user_id, session_id=session_id
+        )
+        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
     def _generate_verification_code(self) -> str:
         return str(random.randint(100000, 999999))
