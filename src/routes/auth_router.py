@@ -16,7 +16,7 @@ from src.schemas.auth_schemas import (
 )
 from src.schemas.user_schemas import UserSchema
 
-router = APIRouter(tags=["auth"], prefix="/api/auth")
+router = APIRouter(tags=["auth"], prefix="/auth")
 
 
 @router.post(
@@ -47,7 +47,8 @@ async def verify(body: VerifySchema, deps: T_AuthDeps, user: T_CurrentUser):
 
 @router.post("/forgot-password", status_code=HTTPStatus.OK)
 async def forgot_password(body: ForgotPasswordSchema, deps: T_AuthDeps):
-    return await deps.service.forgot_password(body)
+    await deps.service.forgot_password(email=body.email)
+    return {"message": "Password reset email sent"}
 
 
 @router.patch("/reset-password", status_code=HTTPStatus.OK)

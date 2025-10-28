@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from scalar_fastapi import get_scalar_api_reference
 from sqlalchemy import select
 
+from src.core.config import base_settings
 from src.core.database import AsyncSessionLocal
 from src.models.role import Role
 from src.models.specialty import Specialty, SpecialtyCategoryEnum
@@ -81,14 +82,10 @@ async def lifespan(_: FastAPI):
     print("shutting down")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, root_path="/api")
 
 
-# TODO: make this actually point to the frontend dynamically
-origins = [
-    "http://localhost",
-    "http://localhost:8080",
-]
+origins = [base_settings.base_url]
 
 app.add_middleware(
     CORSMiddleware,
@@ -99,7 +96,7 @@ app.add_middleware(
 )
 
 
-@app.get("/api/healthcheck")
+@app.get("/healthcheck")
 def read_root():
     return {"Hello": "World"}
 
@@ -107,9 +104,7 @@ def read_root():
 @app.get("/scalar", include_in_schema=False)
 async def scalar_html():
     return get_scalar_api_reference(
-        # Your OpenAPI document
         openapi_url=app.openapi_url,
-        # Avoid CORS issues (optional)
         scalar_proxy_url="https://proxy.scalar.com",
         title="Millennicare API docs",
     )

@@ -8,7 +8,8 @@ from fastapi import HTTPException
 
 from src.clients.email import EmailClient
 from src.clients.token import JWTClient
-from src.core.constants import SESSION_EXPIRE_DAYS
+from src.core.config import base_settings
+from src.core.constants import SESSION_EXPIRE_DAYS, VERIFICATION_CODE_EXPIRE_MINUTES
 from src.models.verification_code import VerificationCodeEnum
 from src.repositories.account_repository import AccountRepository
 from src.repositories.role_repository import RoleRepository
@@ -17,7 +18,7 @@ from src.repositories.user_repository import UserRepository
 from src.repositories.user_to_role_repository import UserToRoleRepository
 from src.repositories.verification_code_repository import VerificationCodeRepository
 from src.schemas.account_schemas import CreateAccountSchema
-from src.schemas.auth_schemas import SignUpSchema, TokenResponse
+from src.schemas.auth_schemas import ResetPasswordSchema, SignUpSchema, TokenResponse
 from src.schemas.session_schemas import CreateSessionSchema
 from src.schemas.user_schemas import CreateUserSchema, UserSchema
 from src.schemas.verification_code_schemas import CreateVerificationCodeSchema
@@ -207,6 +208,74 @@ class AuthService:
             user_id=user_id, session_id=session_id
         )
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+
+    async def forgot_password(self, email: str) -> None:
+        user = await self.user_repository.get_user_by_email(email=email)
+        if user is None:
+            # if the user is not found, the caller of this endpoint should not know
+            # return as if the user was found and an email was sent
+            return
+        # if the user exists, get the accounts associated with the user and check if they have one with 'credentials'
+        accounts = await self.account_repository.get_accounts_by_user_id(
+            user_id=user.id
+        )
+        account = next(
+            (acc for acc in accounts if acc.provider_id == "credentials"), None
+        )
+        if account is None:
+            # if the user does not have a password setup, do not send an email
+            return
+
+        # try to delete the existing forgot password token from the db
+        await self.verification_code_repository.delete_verification_code(
+            user_id=user.id, identifier=VerificationCodeEnum.FORGOT_PASSWORD
+        )
+
+        code = self._generate_verification_code()
+        await self.verification_code_repository.create_verification_code(
+            CreateVerificationCodeSchema(
+                value=code,
+                user_id=user.id,
+                expires_at=datetime.now(timezone.utc)
+                + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES),
+                identifier=VerificationCodeEnum.FORGOT_PASSWORD,
+            )
+        )
+
+        link = f"{base_settings.base_url}/reset-password?token={code}"
+        self.email_client.send_password_reset_email(email=user.email, link=link)
+
+    async def reset_password(self, body: ResetPasswordSchema) -> None:
+        verification_code = await (
+            self.verification_code_repository.get_verification_code_by_value(
+                value=body.token
+            )
+        )
+        if not verification_code:
+            raise HTTPException(
+                detail="Forgot password code is invalid or expired.",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+        account = await self.account_repository.get_account_by_user_id(
+            user_id=verification_code.user_id
+        )
+        if not account or account.provider_id != "credentials":
+            raise HTTPException(
+                detail="User not found",
+                status_code=HTTPStatus.NOT_FOUND,
+            )
+
+        hashed = self._hash_password(body.password)
+        await self.account_repository.update_account(
+            user_id=verification_code.user_id,
+            values={"password": hashed},
+        )
+
+        await self.verification_code_repository.delete_verification_code(
+            user_id=verification_code.user_id,
+            identifier=VerificationCodeEnum.FORGOT_PASSWORD,
+        )
 
     def _generate_verification_code(self) -> str:
         return str(random.randint(100000, 999999))

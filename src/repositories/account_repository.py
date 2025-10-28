@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, update
 
 from src.core.deps import T_Database
 from src.models.account import Account
@@ -19,3 +19,7 @@ class AccountRepository:
         statement = select(Account).where(Account.user_id == user_id)
         result = await self.db.scalars(statement)
         return list(result.all())
+
+    async def update_account(self, user_id: UUID, values: dict) -> None:
+        statement = update(Account).where(Account.user_id == user_id).values(**values)
+        await self.db.execute(statement)

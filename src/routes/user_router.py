@@ -6,7 +6,7 @@ from fastapi import APIRouter, Path, Query
 from src.core.dependencies.user_dependencies import T_UserDeps
 from src.schemas.user_schemas import UpdateUserSchema, UserSchema
 
-router = APIRouter(tags=["user"], prefix="/api/users")
+router = APIRouter(tags=["user"], prefix="/users")
 
 
 @router.delete("/{user_id}", status_code=HTTPStatus.NO_CONTENT)

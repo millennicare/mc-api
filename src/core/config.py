@@ -7,6 +7,10 @@ class Base(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
+    base_url: str = Field(
+        validation_alias="BASE_URL", default="http://localhost:3000"
+    )  # points to the frontend. this could be a different domain based on who the caller is
+
 
 class DatabaseSettings(Base):
     database_url: str = Field(validation_alias="DATABASE_URL")
@@ -35,6 +39,7 @@ class JWTSettings(Base):
     secret_key: str = Field(validation_alias="SECRET_KEY")
 
 
+base_settings = Base()
 database_settings = DatabaseSettings()
 email_settings = EmailSettings()
 storage_settings = StorageSettings()
