@@ -19,4 +19,4 @@ RUN apt-get update \
 RUN curl -sfS https://dotenvx.sh/install.sh | sh
 
 # Run the application.
-CMD ["dotenvx", "run", "-f", ".env.production", "--", "/app/.venv/bin/fastapi", "run", "src/main.py", "--port", "80", "--host", "0.0.0.0"]
+CMD ["dotenvx", "run", "-f", ".env.production", "--", "/app/.venv/bin/fastapi", "run", "src/main.py", "--port", "8000", "--host", "0.0.0.0"]
