@@ -3,10 +3,12 @@ Pytest configuration and shared fixtures for all tests.
 """
 
 import asyncio
+from pathlib import Path
 from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from dotenv import load_dotenv
 from faker import Faker
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -15,6 +17,10 @@ from sqlalchemy.pool import StaticPool
 
 from src.core.database import Base
 from src.main import app
+
+# Load test environment variables before importing any app code
+test_env_path = Path(__file__).parent.parent / ".env.test"
+load_dotenv(test_env_path, override=True)
 
 # Initialize Faker for generating test data
 fake = Faker()

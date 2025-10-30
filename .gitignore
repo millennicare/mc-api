@@ -13,6 +13,7 @@ wheels/
 .env
 .env.keys
 !.env.production
+!.env.test
 
 # ruff
 .ruff_cache
@@ -21,3 +22,4 @@ wheels/
 .ropeproject
 
 .zed
+.pytest_cache
