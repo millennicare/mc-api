@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
 from src.schemas.auth_schemas import RoleEnum
 
 
@@ -9,7 +10,7 @@ class CreateUserSchema(BaseModel):
 
     name: str
     email: EmailStr
-    email_verified: bool | None
+    email_verified: bool = Field(alias="emailVerified", default=False)
 
 
 class UserSchema(CreateUserSchema):
