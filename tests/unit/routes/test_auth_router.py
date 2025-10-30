@@ -31,12 +31,12 @@ class TestAuthRouter:
     def test_sign_up_success(self, client: TestClient, sample_user_data: dict):
         """Test successful user sign up endpoint."""
         # Arrange
-        sign_up_payload = {
-            "name": "John Doe",
-            "email": "john@example.com",
-            "password": "SecurePass123!",
-            "roles": ["caregiver"],
-        }
+        # sign_up_payload = {
+        #     "name": "John Doe",
+        #     "email": "john@example.com",
+        #     "password": "SecurePass123!",
+        #     "roles": ["caregiver"],
+        # }
 
         # Note: This is a simplified test. In a real scenario, you'd need to
         # properly override the dependency injection for the auth service.
