@@ -10,7 +10,7 @@ class WaitlistRepository:
         self.db = db
 
     async def create_waitlist(self, values: CreateWaitlistSchema) -> Waitlist:
-        statement = insert(Waitlist).values(**values.model_dump()).returning()
+        statement = insert(Waitlist).values(**values.model_dump()).returning(Waitlist)
         result = await self.db.execute(statement)
         await self.db.commit()
         return result.scalar_one()
