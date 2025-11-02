@@ -16,8 +16,10 @@ class Waitlist(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, nullable=False, index=True, unique=True)
     contacted: Mapped[bool] = mapped_column(Boolean, default=False)
-    referral_code: Mapped[str] = mapped_column(String)
-    notified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    referral_code: Mapped[str] = mapped_column(String, nullable=True)
+    notified_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     def __repr__(self) -> str:
         return f"<Waitlist(id={self.id}, name={self.name}, email={self.email}, contacted={self.contacted}, referral_code={self.referral_code}, notified_at={self.notified_at})>"
