@@ -14,6 +14,7 @@ class CreateContactSchema(BaseModel):
     full_name: str = Field(alias="fullName")
     email: EmailStr
     message: str
+    subject: str
     user_id: UUID | None = Field(alias="userId", default=None)
 
 
