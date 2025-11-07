@@ -50,4 +50,4 @@ class Contact(Base):
     subject: Mapped[str] = mapped_column(String, nullable=False)
 
     def __repr__(self) -> str:
-        return f"Contact(id={self.id}, full_name={self.full_name}, email={self.email}, message={self.message}, status={self.status}, priority={self.priority}, submitted_at={self.submitted_at}, user_id={self.user_id})"
+        return f"Contact(id={self.id}, full_name={self.full_name}, email={self.email}, message={self.message}, status={self.status}, priority={self.priority}, submitted_at={self.submitted_at}, subject={self.subject}, user_id={self.user_id})"
