@@ -42,8 +42,11 @@ class Contact(Base):
         nullable=False,
         default=datetime.now(timezone.utc),
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID,
         ForeignKey("user.id", ondelete="CASCADE", onupdate="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
+
+    def __repr__(self) -> str:
+        return f"Contact(id={self.id}, full_name={self.full_name}, email={self.email}, message={self.message}, status={self.status}, priority={self.priority}, submitted_at={self.submitted_at}, user_id={self.user_id})"
