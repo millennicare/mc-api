@@ -10,6 +10,7 @@ from src.core.database import AsyncSessionLocal
 from src.models.role import Role
 from src.models.specialty import Specialty, SpecialtyCategoryEnum
 from src.routes.auth_router import router as auth_router
+from src.routes.contact_router import router as contact_router
 from src.routes.user_router import router as user_router
 from src.routes.waitlist_router import router as waitlist_router
 
@@ -114,3 +115,4 @@ async def scalar_html():
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(waitlist_router)
+app.include_router(contact_router)
