@@ -11,7 +11,7 @@ class UserRepository:
     def __init__(self, db: T_Database):
         self.db = db
 
-    async def get_user(self, user_id: str) -> User | None:
+    async def get_user(self, user_id: UUID) -> User | None:
         statement = select(User).where(User.id == user_id)
         result = await self.db.execute(statement)
         return result.scalar_one_or_none()
