@@ -1,6 +1,7 @@
 import random
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
+from uuid import UUID
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -110,7 +111,7 @@ class AuthService:
         account = next(
             (acc for acc in accounts if acc.provider_id == "credentials"), None
         )
-        if account is None:
+        if account is None or account.password is None:
             # when this occurs, a user has made an account with a different provider such as google or facebook
             # they must sign in with that provider if they do not have a password setup
             raise HTTPException(
@@ -145,7 +146,7 @@ class AuthService:
         )
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
-    async def verify_email(self, code: str, user_id: str) -> None:
+    async def verify_email(self, code: str, user_id: UUID) -> None:
         verification_code = (
             await self.verification_code_repository.get_verification_code(
                 user_id=user_id
@@ -181,8 +182,8 @@ class AuthService:
     async def refresh_token(self, refresh_token: str) -> TokenResponse:
         # no need to throw since the decoding method throws
         decoded_refresh_token = self.jwt_client.decode_refresh_token(refresh_token)
-        user_id = decoded_refresh_token.sub
-        session_id = decoded_refresh_token.sessionId
+        user_id = UUID(decoded_refresh_token.sub)
+        session_id = UUID(decoded_refresh_token.sessionId)
 
         session = await self.session_repository.get_session_by_id(session_id=session_id)
         if session is None:
@@ -257,18 +258,20 @@ class AuthService:
                 status_code=HTTPStatus.BAD_REQUEST,
             )
 
-        account = await self.account_repository.get_account_by_user_id(
+        accounts = await self.account_repository.get_accounts_by_user_id(
             user_id=verification_code.user_id
         )
-        if not account or account.provider_id != "credentials":
-            raise HTTPException(
-                detail="User not found",
-                status_code=HTTPStatus.NOT_FOUND,
-            )
+        credentials_account = None
+        for account in accounts:
+            if account.provider_id == "credentials":
+                credentials_account = account
+        if credentials_account is None:
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="yahx")
 
         hashed = self._hash_password(body.password)
         await self.account_repository.update_account(
             user_id=verification_code.user_id,
+            provider_id="credentials",
             values={"password": hashed},
         )
 

@@ -20,6 +20,12 @@ class AccountRepository:
         result = await self.db.scalars(statement)
         return list(result.all())
 
-    async def update_account(self, user_id: UUID, values: dict) -> None:
-        statement = update(Account).where(Account.user_id == user_id).values(**values)
+    async def update_account(
+        self, user_id: UUID, provider_id: str, values: dict
+    ) -> None:
+        statement = (
+            update(Account)
+            .where(Account.user_id == user_id and Account.provider_id == provider_id)
+            .values(**values)
+        )
         await self.db.execute(statement)

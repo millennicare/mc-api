@@ -27,7 +27,7 @@ class UserRepository:
         result = await self.db.execute(statement)
         return result.scalar_one_or_none()
 
-    async def delete_user(self, id: str) -> None:
+    async def delete_user(self, id: UUID) -> None:
         statement = delete(User).where(User.id == id)
         await self.db.execute(statement)
 
