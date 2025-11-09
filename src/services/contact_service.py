@@ -28,7 +28,9 @@ class ContactService:
     async def get_contact_by_id(self, contact_id: UUID) -> ContactSchema:
         contact = await self.contact_repository.get_by_id(contact_id)
         if contact is None:
-            raise HTTPException(detail="Contact not found", status_code=HTTPStatus.NOT_FOUND)
+            raise HTTPException(
+                detail="Contact not found", status_code=HTTPStatus.NOT_FOUND
+            )
         return ContactSchema.model_validate(contact)
 
     async def get_contacts(self, skip: int, limit: int) -> list[ContactSchema]:

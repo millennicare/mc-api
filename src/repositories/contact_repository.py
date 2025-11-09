@@ -17,10 +17,16 @@ class ContactRepository:
         self.db = db
 
     async def create_contact(self, values: CreateContactSchema) -> Contact:
-        statement = insert(Contact).values(**values.model_dump(),
-            submitted_at=datetime.now(timezone.utc),
-            status=ContactStatusEnum.PENDING,
-            priority=ContactPriorityEnum.LOW,).returning(Contact)
+        statement = (
+            insert(Contact)
+            .values(
+                **values.model_dump(),
+                submitted_at=datetime.now(timezone.utc),
+                status=ContactStatusEnum.PENDING,
+                priority=ContactPriorityEnum.LOW,
+            )
+            .returning(Contact)
+        )
 
         result = await self.db.execute(statement)
         await self.db.commit()

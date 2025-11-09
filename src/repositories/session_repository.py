@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import delete, insert, select, update
 
 from src.core.deps import T_Database
@@ -19,7 +21,7 @@ class SessionRepository:
         result = await self.db.execute(statement)
         return result.scalar_one_or_none()
 
-    async def update_session(self, session_id: str, values: dict) -> None:
+    async def update_session(self, session_id: UUID, values: dict) -> None:
         statement = update(Session).where(Session.id == session_id).values(**values)
         await self.db.execute(statement)
 
