@@ -55,10 +55,10 @@ class AuthService:
                 detail="A user with this email address already exists",
             )
 
-        create_user_schema = CreateUserSchema(
+        values = CreateUserSchema(
             name=body.name, email=body.email, email_verified=False
         )
-        user = await self.user_repository.create_user(create_user_schema)
+        user = await self.user_repository.create_user(values=values)
 
         await self.account_repository.create_account(
             CreateAccountSchema(

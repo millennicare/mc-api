@@ -3,11 +3,9 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from src.models.user import User
 from src.repositories.user_info_repository import UserInfoRepository
 from src.repositories.user_repository import UserRepository
 from src.schemas.user_schemas import (
-    CreateUserSchema,
     OnboardUserSchema,
     UpdateUserSchema,
     UserInformation,
@@ -21,10 +19,6 @@ class UserService:
     ):
         self.user_info_repository = user_info_repository
         self.user_repository = user_repository
-
-    async def create_user(self, user: CreateUserSchema) -> User:
-        user = await self.user_repository.create_user(user)
-        return user
 
     async def delete_user(self, id: UUID) -> None:
         await self.user_repository.delete_user(id)
@@ -53,6 +47,15 @@ class UserService:
         if existing_user is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="User not found"
+            )
+
+        existing_user_profile = (
+            await self.user_info_repository.get_user_info_by_user_id(user_id)
+        )
+        if existing_user_profile is not None:
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail="A profile already exists for this user",
             )
 
         user_info = await self.user_info_repository.create_user_info(

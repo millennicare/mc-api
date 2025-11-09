@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 
 from src.core.deps import T_Database
 from src.models.user_information import UserInformation
@@ -21,3 +21,8 @@ class UserInfoRepository:
         )
         result = await self.db.execute(statement)
         return result.scalar_one()
+
+    async def get_user_info_by_user_id(self, user_id: UUID) -> UserInformation | None:
+        statement = select(UserInformation).where(UserInformation.user_id == user_id)
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()
