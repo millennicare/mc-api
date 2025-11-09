@@ -11,6 +11,7 @@ from src.schemas.verification_code_schemas import CreateVerificationCodeSchema
 
 logger = setup_logger(__name__)
 
+
 class VerificationCodeRepository:
     def __init__(self, db: T_Database):
         self.db = db
@@ -24,7 +25,9 @@ class VerificationCodeRepository:
         await self.db.execute(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"VerificationCodeRepository.create_verification_code took {elapsed_ms:.2f}ms")
+        logger.info(
+            f"VerificationCodeRepository.create_verification_code took {elapsed_ms:.2f}ms"
+        )
 
     async def get_verification_code(self, user_id: UUID) -> VerificationCode | None:
         start = perf_counter()
@@ -35,7 +38,9 @@ class VerificationCodeRepository:
         result = await self.db.execute(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"VerificationCodeRepository.get_verification_code took {elapsed_ms:.2f}ms")
+        logger.info(
+            f"VerificationCodeRepository.get_verification_code took {elapsed_ms:.2f}ms"
+        )
 
         return result.scalar_one_or_none()
 
@@ -51,7 +56,9 @@ class VerificationCodeRepository:
         result = await self.db.execute(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"VerificationCodeRepository.get_verification_code_by_value took {elapsed_ms:.2f}ms")
+        logger.info(
+            f"VerificationCodeRepository.get_verification_code_by_value took {elapsed_ms:.2f}ms"
+        )
 
         return result.scalar_one_or_none()
 
@@ -67,4 +74,6 @@ class VerificationCodeRepository:
         await self.db.execute(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"VerificationCodeRepository.delete_verification_code took {elapsed_ms:.2f}ms")
+        logger.info(
+            f"VerificationCodeRepository.delete_verification_code took {elapsed_ms:.2f}ms"
+        )

@@ -10,6 +10,7 @@ from src.models.user_to_role import user_to_role
 
 logger = setup_logger(__name__)
 
+
 class RoleRepository:
     def __init__(self, db: T_Database):
         self.db = db

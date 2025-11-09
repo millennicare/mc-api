@@ -137,3 +137,13 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(waitlist_router)
 app.include_router(contact_router)
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "src.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=base_settings.env != "development",
+    )

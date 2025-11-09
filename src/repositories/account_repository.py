@@ -30,9 +30,10 @@ class AccountRepository:
         statement = select(Account).where(Account.user_id == user_id)
         result = await self.db.scalars(statement)
 
-
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"AccountRepository.get_accounts_by_user_id took {elapsed_ms:.2f}ms")
+        logger.info(
+            f"AccountRepository.get_accounts_by_user_id took {elapsed_ms:.2f}ms"
+        )
 
         return list(result.all())
 

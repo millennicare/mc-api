@@ -10,6 +10,7 @@ from src.schemas.user_schemas import CreateUserSchema
 
 logger = setup_logger(name=__name__)
 
+
 class UserRepository:
     def __init__(self, db: T_Database):
         self.db = db

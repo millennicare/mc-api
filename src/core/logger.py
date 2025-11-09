@@ -8,6 +8,7 @@ class JSONFormatter(logging.Formatter):
     """
     Custom formatter that outputs logs as JSON
     """
+
     def format(self, record: logging.LogRecord) -> str:
         log_data = {
             "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
@@ -24,6 +25,7 @@ class JSONFormatter(logging.Formatter):
             log_data["exception"] = self.formatException(record.exc_info)
 
         return json.dumps(log_data)
+
 
 def setup_logger(name: str = "app") -> logging.Logger:
     """
@@ -44,5 +46,6 @@ def setup_logger(name: str = "app") -> logging.Logger:
         logger.addHandler(console_handler)
 
     return logger
+
 
 logger = setup_logger()

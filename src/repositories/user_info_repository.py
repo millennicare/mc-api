@@ -39,6 +39,8 @@ class UserInfoRepository:
         result = await self.db.execute(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"UserInfoRepository.get_user_info_by_user_id took {elapsed_ms:.2f}ms")
+        logger.info(
+            f"UserInfoRepository.get_user_info_by_user_id took {elapsed_ms:.2f}ms"
+        )
 
         return result.scalar_one_or_none()

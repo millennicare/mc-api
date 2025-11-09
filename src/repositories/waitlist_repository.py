@@ -9,6 +9,7 @@ from src.schemas.waitlist_schemas import CreateWaitlistSchema
 
 logger = setup_logger(__name__)
 
+
 class WaitlistRepository:
     def __init__(self, db: T_Database):
         self.db = db
