@@ -14,6 +14,7 @@ from src.schemas.auth_schemas import (
     TokenResponse,
     VerifySchema,
 )
+from src.schemas.error_schemas import ErrorDetail
 from src.schemas.user_schemas import UserSchema
 
 router = APIRouter(tags=["auth"], prefix="/auth")
@@ -24,8 +25,11 @@ router = APIRouter(tags=["auth"], prefix="/auth")
     status_code=HTTPStatus.CREATED,
     responses={
         201: {"description": "User created"},
-        404: {"description": "Role not found"},
-        409: {"description": "A user already exists with this email address"},
+        404: {"description": "Role not found", "model": ErrorDetail},
+        409: {
+            "description": "A user already exists with this email address",
+            "model": ErrorDetail,
+        },
     },
     response_model=UserSchema,
 )

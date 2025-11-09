@@ -46,7 +46,7 @@ class SessionRepository:
         elapsed_ms = (perf_counter() - start) * 1000
         logger.info(f"SessionRepository.update_session took {elapsed_ms:.2f}ms")
 
-    async def delete_session(self, session_id: str) -> None:
+    async def delete_session(self, session_id: UUID) -> None:
         start = perf_counter()
 
         statement = delete(Session).where(Session.id == session_id)

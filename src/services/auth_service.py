@@ -193,7 +193,7 @@ class AuthService:
 
         self.logger.info(f"AuthService.sign_in - User {str(user_id)} is now verified ")
 
-    async def sign_out(self, session_id: str) -> None:
+    async def sign_out(self, session_id: UUID) -> None:
         await self.session_repository.delete_session(session_id=session_id)
 
         self.logger.info(f"Deleted session for {str(session_id)}")
