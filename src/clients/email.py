@@ -1,24 +1,11 @@
 from pathlib import Path
-from typing import Protocol
 
 import resend
 from jinja2 import Environment, FileSystemLoader, Template
 
+from src.core.logger import setup_logger
 
-class EmailClientProtocol(Protocol):
-    """Protocol for the client to enable dependency injection"""
-
-    def send_verification_email(self, email: str, code: str) -> dict:
-        """Send email verification code."""
-        ...
-
-    def send_password_reset_email(self, email: str, link: str) -> dict:
-        """Send password reset link."""
-        ...
-
-    def send_waitlist_confirmation(self, email: str, name: str) -> dict:
-        """Send waitlist confirmation."""
-        ...
+logger = setup_logger()
 
 
 class EmailClient:
@@ -33,13 +20,12 @@ class EmailClient:
 
         Args:
             api_key: Resend API key
-            from_email: Sender email address (e.g., "MillenniCare <noreply@millennicare.com>")
+            from_email: Sender email address (e.g., "Millennicare <noreply@millennicare.com>")
             templates_dir: Directory containing email templates
         """
         resend.api_key = api_key
         self.from_email = from_email
 
-        # Set up Jinja2 environment
         self.jinja_env = Environment(
             loader=FileSystemLoader(templates_dir),
             autoescape=True,  # Important for security
@@ -71,6 +57,7 @@ class EmailClient:
             "html": html,
         }
         resend.Emails.send(params)
+        logger.info(f"EmailClient . _send_email . Sent email to {to}")
 
     def send_verification_email(self, email: str, code: str) -> None:
         """

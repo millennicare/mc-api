@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,6 +12,7 @@ class Base(BaseSettings):
     base_url: str = Field(
         validation_alias="BASE_URL", default="http://localhost:3000"
     )  # points to the frontend. this could be a different domain based on who the caller is
+    env: Literal["development", "production"] = Field(validation_alias="APP_ENV", default="development")
 
 
 class DatabaseSettings(Base):

@@ -266,7 +266,9 @@ class AuthService:
             if account.provider_id == "credentials":
                 credentials_account = account
         if credentials_account is None:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No account found")
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="No account found"
+            )
 
         hashed = self._hash_password(body.password)
         await self.account_repository.update_account(
