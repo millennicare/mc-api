@@ -11,6 +11,7 @@ from src.clients.email import EmailClient
 from src.clients.token import JWTClient
 from src.core.config import base_settings
 from src.core.constants import SESSION_EXPIRE_DAYS, VERIFICATION_CODE_EXPIRE_MINUTES
+from src.core.logger import setup_logger
 from src.models.verification_code import VerificationCodeEnum
 from src.repositories.account_repository import AccountRepository
 from src.repositories.role_repository import RoleRepository
@@ -45,6 +46,7 @@ class AuthService:
         self.verification_code_repository = verification_code_repository
         self.email_client = email_client
         self.jwt_client = jwt_client
+        self.logger = setup_logger(__name__)
 
     async def sign_up(self, body: SignUpSchema) -> UserSchema:
         existing_user = await self.user_repository.get_user_by_email(email=body.email)
@@ -59,6 +61,7 @@ class AuthService:
             name=body.name, email=body.email, email_verified=False
         )
         user = await self.user_repository.create_user(values=values)
+        self.logger.info(f"AuthService.sign_up . Created user {body.email}")
 
         await self.account_repository.create_account(
             CreateAccountSchema(
@@ -68,6 +71,7 @@ class AuthService:
                 user_id=user.id,
             )
         )
+        self.logger.info(f"AuthService.sign_up . Created account with 'provider_id' of 'credentials' for user {body.email}")
 
         for role in body.roles:
             role = await self.role_repository.get_role_by_name(name=role)
@@ -76,6 +80,7 @@ class AuthService:
                     user_id=user.id,
                     role_id=role.id,
                 )
+                self.logger.info(f"AuthService.sign_up . Created user to role link with role {role.name} for user {body.email}")
 
         return UserSchema.model_validate(user)
 
@@ -90,6 +95,8 @@ class AuthService:
         # if the user's email is not yet verified, create a verification code and send
         # however, if there is already an existing verification code for this purpose, delete and send another
         if not user.email_verified:
+            self.logger.info(f"AuthService.sign_in - User is NOT verified, sending verification email to {email}")
+
             code = self._generate_verification_code()
             await self.verification_code_repository.delete_verification_code(
                 user_id=user.id, identifier=VerificationCodeEnum.VERIFY_EMAIL
@@ -144,6 +151,8 @@ class AuthService:
         refresh_token = self.jwt_client.create_refresh_token(
             user_id=user.id, session_id=session.id
         )
+
+        self.logger.info(f"AuthService.sign_in - {email} logged in successfully")
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
     async def verify_email(self, code: str, user_id: UUID) -> None:
@@ -176,8 +185,12 @@ class AuthService:
             user_id=user_id, values={"email_verified": True}
         )
 
+        self.logger.info(f"AuthService.sign_in - User {str(user_id)} is now verified ")
+
     async def sign_out(self, session_id: str) -> None:
         await self.session_repository.delete_session(session_id=session_id)
+
+        self.logger.info(f"Deleted session for {str(session_id)}")
 
     async def refresh_token(self, refresh_token: str) -> TokenResponse:
         # no need to throw since the decoding method throws
@@ -208,6 +221,9 @@ class AuthService:
         refresh_token = self.jwt_client.create_refresh_token(
             user_id=user_id, session_id=session_id
         )
+
+        self.logger.info(f"AuthService.refresh_token - Successfully refresh tokens for {str(user_id)}")
+
         return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
     async def forgot_password(self, email: str) -> None:
@@ -266,7 +282,9 @@ class AuthService:
             if account.provider_id == "credentials":
                 credentials_account = account
         if credentials_account is None:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No account found")
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="No account found"
+            )
 
         hashed = self._hash_password(body.password)
         await self.account_repository.update_account(

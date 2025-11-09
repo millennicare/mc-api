@@ -9,12 +9,12 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from src.core.config import database_settings
+from src.core.config import base_settings, database_settings
 
 # Create async engine
 engine = create_async_engine(
     database_settings.database_url,
-    echo=True,  # Set to False in production
+    echo=base_settings.env != "production",
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
