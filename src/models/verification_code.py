@@ -19,7 +19,7 @@ class VerificationCode(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID, primary_key=True, default=lambda: uuid.uuid4()
     )
-    value: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    value: Mapped[str] = mapped_column(String, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
