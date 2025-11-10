@@ -14,13 +14,24 @@
             Hi {{ email }},
         </p>
         <p style="color: #374151; margin: 0 0 16px 0;">
-            Thank you for signing up. Please use the code below to verify your email address.
+            Thank you for signing up. Please verify your email address by clicking the button below.
+        </p>
+        <div style="margin: 24px 0; text-align: center;">
+            <a href="{{ link }}" style="display: inline-block; background-color: #b857a1; color: #ffffff; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                Verify Email Address
+            </a>
+        </div>
+        <p style="color: #374151; margin: 16px 0; font-size: 14px; text-align: center;">
+            Or enter this code manually:
         </p>
         <div style="margin: 16px 0; text-align: center;">
             <span style="display: inline-block; border-radius: 8px; background-color: #e5e7eb; padding: 8px 16px; font-weight: bold; font-size: 30px; letter-spacing: 0.1em;">
                 {{ code }}
             </span>
         </div>
+        <p style="color: #6b7280; font-size: 12px; margin: 16px 0 0 0; text-align: center;">
+            This verification link expires in 15 minutes.
+        </p>
         <hr style="margin: 24px 0; border: none; border-top: 1px solid #d1d5db;">
         <p style="text-align: center; color: #6b7280; font-size: 12px; margin: 0;">
             If you didn't request this email, you can safely ignore this.

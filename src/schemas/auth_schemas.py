@@ -54,6 +54,7 @@ class TokenResponse(BaseModel):
 
 class VerifySchema(BaseModel):
     code: str
+    token: str
 
 
 class ForgotPasswordSchema(BaseModel):
@@ -78,3 +79,7 @@ class RefreshTokenRequestSchema(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     refresh_token: str = Field(alias="refreshToken")
+
+
+class ResendVerificationSchema(BaseModel):
+    email: EmailStr
