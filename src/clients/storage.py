@@ -11,12 +11,6 @@ class StorageClient:
     def __init__(self):
         """
         Initialize the storage client for Cloudflare R2.
-
-        Args:
-            account_id: Cloudflare account ID
-            access_key_id: R2 access key ID
-            secret_access_key: R2 secret access key
-            bucket_name: Name of the R2 bucket
         """
         self.bucket_name = storage_settings.cloudflare_bucket_name
         self.logger = setup_logger(__name__)
@@ -35,7 +29,6 @@ class StorageClient:
         self,
         file: UploadFile,
         key: str,
-        content_type: str | None = None,
         metadata: dict[str, str] | None = None,
     ) -> str:
         """
@@ -44,7 +37,6 @@ class StorageClient:
         Args:
             file: File-like object to upload
             key: Object key (path) in the bucket
-            content_type: MIME type of the file
             metadata: Optional metadata to attach to the file
 
         Returns:
