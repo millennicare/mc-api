@@ -53,3 +53,21 @@ async def get_user(
 @router.post("/onboard", status_code=HTTPStatus.CREATED, response_model=UserInformation)
 async def onboard_user(user: T_CurrentUser, deps: T_UserDeps, body: OnboardUserSchema):
     return await deps.service.onboard_user(user_id=user.id, body=body)
+
+
+# Leaving these in as examples on how to perform the file upload later for careseeker and caregiver onboarding
+# @router.post("/temp")
+# async def upload_file(
+#     file: Annotated[UploadFile, File(description="Profile picture")], deps: T_UserDeps
+# ):
+#     await deps.storage_client.upload_file(file=file, key="123")
+
+
+# @router.get("/temp/{file_id}")
+# async def get_file(file_id: str, deps: T_UserDeps):
+#     return deps.storage_client.get_presigned_url(file_id)
+
+
+# @router.delete("/temp/{file_id}")
+# async def delete_file(file_id: str, deps: T_UserDeps):
+#     deps.storage_client.delete_file(file_id)

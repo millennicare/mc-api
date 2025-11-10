@@ -5,8 +5,6 @@ from jinja2 import Environment, FileSystemLoader, Template
 
 from src.core.logger import setup_logger
 
-logger = setup_logger()
-
 
 class EmailClient:
     def __init__(
@@ -30,6 +28,7 @@ class EmailClient:
             loader=FileSystemLoader(templates_dir),
             autoescape=True,  # Important for security
         )
+        self.logger = setup_logger(__name__)
 
     def _render_template(self, template_name: str, **context) -> str:
         """Render a Jinja2 template with the given context."""
@@ -57,7 +56,7 @@ class EmailClient:
             "html": html,
         }
         resend.Emails.send(params)
-        logger.info(f"EmailClient . _send_email . Sent email to {to}")
+        self.logger.info(f"EmailClient . _send_email . Sent email to {to}")
 
     def send_verification_email(self, email: str, code: str) -> None:
         """
