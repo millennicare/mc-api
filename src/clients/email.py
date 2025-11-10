@@ -56,9 +56,9 @@ class EmailClient:
             "html": html,
         }
         resend.Emails.send(params)
-        self.logger.info(f"EmailClient . _send_email . Sent email to {to}")
+        self.logger.info(f"EmailClient._send_email - Sent email to {to}")
 
-    def send_verification_email(self, email: str, code: str) -> None:
+    def send_verification_email(self, email: str, code: str, link: str) -> None:
         """
         Send email verification code.
 
@@ -67,9 +67,7 @@ class EmailClient:
             code: Verification code
         """
         html = self._render_template(
-            "email_verification.html",
-            email=email,
-            code=code,
+            "email_verification.html", email=email, code=code, link=link
         )
         self._send_email(
             to=email,

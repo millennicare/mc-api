@@ -1,4 +1,5 @@
 import random
+import secrets
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from uuid import UUID
@@ -57,8 +58,8 @@ class AuthService:
                 detail="A user with this email address already exists",
             )
 
-        values = CreateUserSchema(
-            name=body.name, email=body.email, email_verified=False
+        values = CreateUserSchema.model_validate(
+            {"name": body.name, "email": body.email, "email_verified": False}
         )
         user = await self.user_repository.create_user(values=values)
         self.logger.info(f"AuthService.sign_up . Created user {body.email}")
@@ -86,6 +87,26 @@ class AuthService:
                     f"AuthService.sign_up . Created user to role link with role {role.name} for user {body.email}"
                 )
 
+        code = self._generate_verification_code()
+        token = self._generate_token()
+        await self.verification_code_repository.create_verification_code(
+            CreateVerificationCodeSchema(
+                value=code,
+                token=token,
+                user_id=user.id,
+                expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
+                identifier=VerificationCodeEnum.VERIFY_EMAIL,
+            )
+        )
+
+        verification_url = f"{base_settings.base_url}/verify-email?token={token}"
+        self.email_client.send_verification_email(
+            email=user.email, code=code, link=verification_url
+        )
+        self.logger.info(
+            f"AuthService.sign_up - Sending verification email to {user.email}"
+        )
+
         return UserSchema.model_validate(user)
 
     async def sign_in(self, email: str, password: str) -> TokenResponse:
@@ -96,26 +117,12 @@ class AuthService:
                 detail="Incorrect email or password",
             )
 
-        # if the user's email is not yet verified, create a verification code and send
-        # however, if there is already an existing verification code for this purpose, delete and send another
+        # Check if email is verified
         if not user.email_verified:
-            self.logger.info(
-                f"AuthService.sign_in - User is NOT verified, sending verification email to {email}"
+            raise HTTPException(
+                status_code=HTTPStatus.FORBIDDEN,
+                detail="Please verify your email address before signing in",
             )
-
-            code = self._generate_verification_code()
-            await self.verification_code_repository.delete_verification_code(
-                user_id=user.id, identifier=VerificationCodeEnum.VERIFY_EMAIL
-            )
-            await self.verification_code_repository.create_verification_code(
-                CreateVerificationCodeSchema(
-                    value=code,
-                    user_id=user.id,
-                    expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
-                    identifier=VerificationCodeEnum.VERIFY_EMAIL,
-                )
-            )
-            self.email_client.send_verification_email(email=user.email, code=code)
 
         # find the users account with credentials
         accounts = await self.account_repository.get_accounts_by_user_id(
@@ -159,43 +166,60 @@ class AuthService:
         )
 
         self.logger.info(f"AuthService.sign_in - {email} logged in successfully")
-        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+        return TokenResponse.model_validate(
+            {"access_token": access_token, "refresh_token": refresh_token}
+        )
 
-    async def verify_email(self, code: str, user_id: UUID) -> None:
+    async def verify_email(self, token: str, code: str) -> None:
+        # Query by token to find the verification code
         verification_code = (
-            await self.verification_code_repository.get_verification_code(
-                user_id=user_id
+            await self.verification_code_repository.get_verification_code_by_token(
+                token=token
             )
         )
+
         if verification_code is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
-                detail="Verification code is invalid or expired.",
+                detail="Verification code is invalid or expired",
             )
 
-        if (
-            verification_code.identifier != VerificationCodeEnum.VERIFY_EMAIL
-            or verification_code.value != code
-            or verification_code.expires_at < datetime.now(timezone.utc)
-        ):
+        # Verify it's the correct type, code matches, and not expired
+        if verification_code.identifier != VerificationCodeEnum.VERIFY_EMAIL:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail="Invalid verification code type",
+            )
+
+        if verification_code.value != code:
             raise HTTPException(
                 status_code=HTTPStatus.UNAUTHORIZED,
-                detail="Verification code is invalid or expired.",
+                detail="Verification code is incorrect",
             )
 
-        await self.verification_code_repository.delete_verification_code(
-            user_id=user_id, identifier=VerificationCodeEnum.VERIFY_EMAIL
-        )
+        if verification_code.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=HTTPStatus.UNAUTHORIZED,
+                detail="Verification code has expired",
+            )
 
+        # Mark email as verified
         await self.user_repository.update_user(
-            user_id=user_id, values={"email_verified": True}
+            user_id=verification_code.user_id, values={"email_verified": True}
         )
 
-        self.logger.info(f"AuthService.sign_in - User {str(user_id)} is now verified ")
+        # Delete the verification code (single-use)
+        await self.verification_code_repository.delete_verification_code(
+            user_id=verification_code.user_id,
+            identifier=VerificationCodeEnum.VERIFY_EMAIL,
+        )
+
+        self.logger.info(
+            f"AuthService.verify_email - User {str(verification_code.user_id)} email verified successfully"
+        )
 
     async def sign_out(self, session_id: UUID) -> None:
         await self.session_repository.delete_session(session_id=session_id)
-
         self.logger.info(f"Deleted session for {str(session_id)}")
 
     async def refresh_token(self, refresh_token: str) -> TokenResponse:
@@ -232,7 +256,9 @@ class AuthService:
             f"AuthService.refresh_token - Successfully refresh tokens for {str(user_id)}"
         )
 
-        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+        return TokenResponse.model_validate(
+            {"access_token": access_token, "refresh_token": refresh_token}
+        )
 
     async def forgot_password(self, email: str) -> None:
         user = await self.user_repository.get_user_by_email(email=email)
@@ -257,9 +283,11 @@ class AuthService:
         )
 
         code = self._generate_verification_code()
+        token = self._generate_token()
         await self.verification_code_repository.create_verification_code(
             CreateVerificationCodeSchema(
                 value=code,
+                token=token,
                 user_id=user.id,
                 expires_at=datetime.now(timezone.utc)
                 + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES),
@@ -267,18 +295,30 @@ class AuthService:
             )
         )
 
-        link = f"{base_settings.base_url}/reset-password?token={code}"
-        self.email_client.send_password_reset_email(email=user.email, link=link)
+        reset_url = f"{base_settings.base_url}/reset-password?token={token}"
+        self.email_client.send_password_reset_email(email=user.email, link=reset_url)
 
     async def reset_password(self, body: ResetPasswordSchema) -> None:
         verification_code = await (
-            self.verification_code_repository.get_verification_code_by_value(
-                value=body.token
+            self.verification_code_repository.get_verification_code_by_token(
+                token=body.token
             )
         )
         if not verification_code:
             raise HTTPException(
-                detail="Forgot password code is invalid or expired.",
+                detail="Password reset code is invalid or expired",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+        if verification_code.identifier != VerificationCodeEnum.FORGOT_PASSWORD:
+            raise HTTPException(
+                detail="Invalid code type",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+        if verification_code.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(
+                detail="Password reset code has expired",
                 status_code=HTTPStatus.BAD_REQUEST,
             )
 
@@ -306,6 +346,51 @@ class AuthService:
             identifier=VerificationCodeEnum.FORGOT_PASSWORD,
         )
 
+    async def resend_verification(self, email: str) -> None:
+        user = await self.user_repository.get_user_by_email(email=email)
+
+        # Always return success to avoid revealing if email exists
+        # This prevents email enumeration attacks
+        if user is None:
+            self.logger.info(
+                f"AuthService.resend_verification - Email not found: {email}"
+            )
+            return
+
+        # Don't send if already verified
+        if user.email_verified:
+            self.logger.info(
+                f"AuthService.resend_verification - Email already verified: {email}"
+            )
+            return
+
+        # Delete any existing verification codes (invalidate old ones)
+        await self.verification_code_repository.delete_verification_code(
+            user_id=user.id, identifier=VerificationCodeEnum.VERIFY_EMAIL
+        )
+
+        # Generate new code and token
+        code = self._generate_verification_code()
+        token = self._generate_token()
+        await self.verification_code_repository.create_verification_code(
+            values=CreateVerificationCodeSchema(
+                token=token,
+                value=code,
+                expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
+                user_id=user.id,
+                identifier=VerificationCodeEnum.VERIFY_EMAIL,
+            )
+        )
+
+        verification_url = f"{base_settings.base_url}/verify-email?token={token}"
+        self.email_client.send_verification_email(
+            email=user.email, code=code, link=verification_url
+        )
+
+        self.logger.info(
+            f"AuthService.resend_verification - Resent verification email to {email}"
+        )
+
     def _generate_verification_code(self) -> str:
         return str(random.randint(100000, 999999))
 
@@ -316,3 +401,6 @@ class AuthService:
     def _hash_password(self, password: str) -> str:
         ph = PasswordHasher()
         return ph.hash(password)
+
+    def _generate_token(self) -> str:
+        return secrets.token_urlsafe(32)

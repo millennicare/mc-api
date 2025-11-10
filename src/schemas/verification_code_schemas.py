@@ -13,6 +13,7 @@ class CreateVerificationCodeSchema(BaseModel):
     expires_at: datetime
     user_id: UUID
     identifier: VerificationCodeEnum
+    token: str
 
 
 class VerificationCodeSchema(CreateVerificationCodeSchema):

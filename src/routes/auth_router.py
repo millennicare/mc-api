@@ -9,6 +9,7 @@ from src.core.deps import T_CurrentUser, T_Session
 from src.schemas.auth_schemas import (
     ForgotPasswordSchema,
     RefreshTokenRequestSchema,
+    ResendVerificationSchema,
     ResetPasswordSchema,
     SignUpSchema,
     TokenResponse,
@@ -24,7 +25,6 @@ router = APIRouter(tags=["auth"], prefix="/auth")
     "/sign-up",
     status_code=HTTPStatus.CREATED,
     responses={
-        201: {"description": "User created"},
         404: {"description": "Role not found", "model": ErrorDetail},
         409: {
             "description": "A user already exists with this email address",
@@ -45,8 +45,8 @@ async def sign_in(
 
 
 @router.post("/verify", status_code=HTTPStatus.OK)
-async def verify(body: VerifySchema, deps: T_AuthDeps, user: T_CurrentUser):
-    return await deps.service.verify_email(code=body.code, user_id=user.id)
+async def verify(body: VerifySchema, deps: T_AuthDeps):
+    return await deps.service.verify_email(token=body.token, code=body.code)
 
 
 @router.post("/forgot-password", status_code=HTTPStatus.OK)
@@ -73,3 +73,8 @@ async def sign_out(session: T_Session, deps: T_AuthDeps):
 @router.get("/me", status_code=HTTPStatus.OK, response_model=UserSchema)
 async def get_current_user(user: T_CurrentUser):
     return user
+
+
+@router.post("/resend-verification", status_code=HTTPStatus.OK)
+async def resend_verification(body: ResendVerificationSchema, deps: T_AuthDeps):
+    await deps.service.resend_verification(email=body.email)

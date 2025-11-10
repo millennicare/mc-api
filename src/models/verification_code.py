@@ -32,6 +32,7 @@ class VerificationCode(Base):
     identifier: Mapped[VerificationCodeEnum] = mapped_column(
         Enum(VerificationCodeEnum), nullable=False
     )
+    token: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
     def __repr__(self) -> str:
-        return f"<Verificationcode(id={self.id}, value={self.value}, expires_at={self.expires_at}, user_id={self.user_id}, identifier={self.identifier})>"
+        return f"<Verificationcode(id={self.id}, value={self.value}, expires_at={self.expires_at}, user_id={self.user_id}, identifier={self.identifier}, token={self.token})>"
