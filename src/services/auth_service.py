@@ -117,13 +117,6 @@ class AuthService:
                 detail="Incorrect email or password",
             )
 
-        # Check if email is verified
-        if not user.email_verified:
-            raise HTTPException(
-                status_code=HTTPStatus.FORBIDDEN,
-                detail="Please verify your email address before signing in",
-            )
-
         # find the users account with credentials
         accounts = await self.account_repository.get_accounts_by_user_id(
             user_id=user.id
