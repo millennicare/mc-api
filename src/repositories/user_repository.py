@@ -2,18 +2,18 @@ from time import perf_counter
 from uuid import UUID
 
 from sqlalchemy import delete, insert, select, update
+from sqlalchemy.orm import joinedload
 
 from src.core.deps import T_Database
 from src.core.logger import setup_logger
 from src.models.user import User
 from src.schemas.user_schemas import CreateUserSchema
 
-logger = setup_logger(name=__name__)
-
 
 class UserRepository:
     def __init__(self, db: T_Database):
         self.db = db
+        self.logger = setup_logger(name=__name__)
 
     async def get_user(self, user_id: UUID) -> User | None:
         start = perf_counter()
@@ -22,7 +22,22 @@ class UserRepository:
         result = await self.db.execute(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"UserRepository.get_user took {elapsed_ms:.2f}ms")
+        self.logger.info(f"UserRepository.get_user took {elapsed_ms:.2f}ms")
+
+        return result.scalar_one_or_none()
+
+    async def get_user_with_information(self, user_id: UUID) -> User | None:
+        start = perf_counter()
+
+        statement = (
+            select(User).options(joinedload(User.user_info)).where(User.id == user_id)
+        )
+        result = await self.db.execute(statement)
+
+        elapsed_ms = (perf_counter() - start) * 1000
+        self.logger.info(
+            f"UserRepository.get_user_with_information took {elapsed_ms:.2f}ms"
+        )
 
         return result.scalar_one_or_none()
 
@@ -34,7 +49,7 @@ class UserRepository:
         await self.db.commit()
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"UserRepository.create_user took {elapsed_ms:.2f}ms")
+        self.logger.info(f"UserRepository.create_user took {elapsed_ms:.2f}ms")
 
         return result.scalar_one()
 
@@ -45,7 +60,7 @@ class UserRepository:
         result = await self.db.execute(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"UserRepository.get_user_by_email took {elapsed_ms:.2f}ms")
+        self.logger.info(f"UserRepository.get_user_by_email took {elapsed_ms:.2f}ms")
 
         return result.scalar_one_or_none()
 
@@ -56,7 +71,7 @@ class UserRepository:
         await self.db.execute(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"UserRepository.delete_user took {elapsed_ms:.2f}ms")
+        self.logger.info(f"UserRepository.delete_user took {elapsed_ms:.2f}ms")
 
     async def get_users(self, skip: int, limit: int) -> list[User]:
         start = perf_counter()
@@ -65,7 +80,7 @@ class UserRepository:
         result = await self.db.scalars(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"UserRepository.get_users took {elapsed_ms:.2f}ms")
+        self.logger.info(f"UserRepository.get_users took {elapsed_ms:.2f}ms")
 
         return list(result.all())
 
@@ -79,6 +94,6 @@ class UserRepository:
         await self.db.commit()
 
         elapsed_ms = (perf_counter() - start) * 1000
-        logger.info(f"UserRepository.update_user took {elapsed_ms:.2f}ms")
+        self.logger.info(f"UserRepository.update_user took {elapsed_ms:.2f}ms")
 
         return result.scalar_one()

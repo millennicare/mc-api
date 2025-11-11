@@ -17,13 +17,18 @@ from src.models.verification_code import VerificationCodeEnum
 from src.repositories.account_repository import AccountRepository
 from src.repositories.role_repository import RoleRepository
 from src.repositories.session_repository import SessionRepository
+from src.repositories.user_info_repository import UserInfoRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.user_to_role_repository import UserToRoleRepository
 from src.repositories.verification_code_repository import VerificationCodeRepository
 from src.schemas.account_schemas import CreateAccountSchema
 from src.schemas.auth_schemas import ResetPasswordSchema, SignUpSchema, TokenResponse
 from src.schemas.session_schemas import CreateSessionSchema
-from src.schemas.user_schemas import CreateUserSchema, UserSchema
+from src.schemas.user_schemas import (
+    CreateUserSchema,
+    UserSchema,
+    UserWithInformationSchema,
+)
 from src.schemas.verification_code_schemas import CreateVerificationCodeSchema
 
 
@@ -33,6 +38,7 @@ class AuthService:
         account_repository: AccountRepository,
         role_repository: RoleRepository,
         session_repository: SessionRepository,
+        user_info_repository: UserInfoRepository,
         user_repository: UserRepository,
         user_to_role_repository: UserToRoleRepository,
         verification_code_repository: VerificationCodeRepository,
@@ -43,6 +49,7 @@ class AuthService:
         self.user_repository = user_repository
         self.role_repository = role_repository
         self.session_repository = session_repository
+        self.user_info_repository = user_info_repository
         self.user_to_role_repository = user_to_role_repository
         self.verification_code_repository = verification_code_repository
         self.email_client = email_client
@@ -59,7 +66,12 @@ class AuthService:
             )
 
         values = CreateUserSchema.model_validate(
-            {"first_name": body.first_name, "last_name": body.last_name, "email": body.email, "email_verified": False}
+            {
+                "first_name": body.first_name,
+                "last_name": body.last_name,
+                "email": body.email,
+                "email_verified": False,
+            }
         )
         user = await self.user_repository.create_user(values=values)
         self.logger.info(f"AuthService.sign_up . Created user {body.email}")
@@ -383,6 +395,10 @@ class AuthService:
         self.logger.info(
             f"AuthService.resend_verification - Resent verification email to {email}"
         )
+
+    async def get_me(self, user_id: UUID) -> UserWithInformationSchema:
+        user = await self.user_repository.get_user_with_information(user_id)
+        return UserWithInformationSchema.model_validate(user)
 
     def _generate_verification_code(self) -> str:
         return str(random.randint(100000, 999999))

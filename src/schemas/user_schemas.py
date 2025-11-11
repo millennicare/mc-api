@@ -20,6 +20,8 @@ class CreateUserSchema(BaseModel):
 
 class UserSchema(CreateUserSchema):
     id: UUID
+    created_at: datetime = Field(alias="createdAt")
+    updated_at: datetime | None = Field(alias="updatedAt", default=None)
 
 
 class AddRoleToUserSchema(BaseModel):
@@ -63,3 +65,7 @@ class UserInformation(OnboardUserSchema):
     user_id: UUID = Field(alias="userId")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime | None = Field(alias="updatedAt", default=None)
+
+
+class UserWithInformationSchema(UserSchema):
+    user_info: UserInformation | None = Field(alias="profile", default=None)
