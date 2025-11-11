@@ -32,7 +32,8 @@ class RefreshToken(TokenBase):
 class SignUpSchema(BaseModel):
     email: EmailStr
     password: str
-    name: str = Field(min_length=1)
+    first_name: str = Field(min_length=1, alias="firstName")
+    last_name: str = Field(min_length=1, alias="lastName")
     roles: list[RoleEnum]
 
     @field_validator("password", mode="after")

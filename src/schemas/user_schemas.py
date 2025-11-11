@@ -12,9 +12,10 @@ from src.schemas.auth_schemas import RoleEnum
 class CreateUserSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-    name: str
+    first_name: str = Field(min_length=1, alias="firstName")
+    last_name: str = Field(min_length=1, alias="lastName")
     email: EmailStr
-    email_verified: bool = Field(alias="emailVerified", default=False)
+    email_verified: bool | None = Field(alias="emailVerified", default=False)
 
 
 class UserSchema(CreateUserSchema):
@@ -27,7 +28,8 @@ class AddRoleToUserSchema(BaseModel):
 
 
 class UpdateUserSchema(BaseModel):
-    name: str | None = None
+    first_name: str | None = Field(alias="firstName", default=None)
+    last_name: str | None = Field(alias="lastName", default=None)
     email: EmailStr | None = None
     roles_to_add: list[RoleEnum] | None = Field(alias="rolesToAdd", default=None)
     roles_to_remove: list[RoleEnum] | None = Field(alias="rolesToRemove", default=None)

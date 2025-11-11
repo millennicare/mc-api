@@ -46,7 +46,7 @@ async def sign_in(
 
 @router.post("/verify", status_code=HTTPStatus.OK)
 async def verify(body: VerifySchema, deps: T_AuthDeps):
-    return await deps.service.verify_email(token=body.token, code=body.code)
+    await deps.service.verify_email(token=body.token, code=body.code)
 
 
 @router.post("/forgot-password", status_code=HTTPStatus.OK)
