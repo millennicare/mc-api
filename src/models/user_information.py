@@ -1,11 +1,15 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, DateTime, Enum, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core.database import Base
+
+if TYPE_CHECKING:
+    from src.models.user import User
 
 
 class UserGenderEnum(enum.Enum):
@@ -31,6 +35,8 @@ class UserInformation(Base):
     phone_number: Mapped[str] = mapped_column(String, nullable=False)
     birthdate: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     gender: Mapped[UserGenderEnum] = mapped_column(Enum(UserGenderEnum), nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="user_info")
 
     def __repr__(self) -> str:
         return f"<UserInformation(id={self.id}, user_id={self.user_id}, phone_number={self.phone_number}, birthdate={self.birthdate}, gender={self.gender})>"

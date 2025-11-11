@@ -9,6 +9,7 @@ from src.core.deps import T_Database
 from src.repositories.account_repository import AccountRepository
 from src.repositories.role_repository import RoleRepository
 from src.repositories.session_repository import SessionRepository
+from src.repositories.user_info_repository import UserInfoRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.user_to_role_repository import UserToRoleRepository
 from src.repositories.verification_code_repository import VerificationCodeRepository
@@ -17,6 +18,7 @@ from src.services.auth_service import AuthService
 
 class AuthDependencies:
     def __init__(self, db: T_Database):
+        self.user_info_repository = UserInfoRepository(db)
         self.user_repository = UserRepository(db)
         self.role_repository = RoleRepository(db)
         self.account_repository = AccountRepository(db)
@@ -36,6 +38,7 @@ class AuthDependencies:
             session_repository=self.session_repository,
             email_client=self.email_client,
             jwt_client=self.jwt_client,
+            user_info_repository=self.user_info_repository,
         )
 
 

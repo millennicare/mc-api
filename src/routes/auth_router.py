@@ -16,7 +16,7 @@ from src.schemas.auth_schemas import (
     VerifySchema,
 )
 from src.schemas.error_schemas import ErrorDetail
-from src.schemas.user_schemas import UserSchema
+from src.schemas.user_schemas import UserSchema, UserWithInformationSchema
 
 router = APIRouter(tags=["auth"], prefix="/auth")
 
@@ -70,9 +70,9 @@ async def sign_out(session: T_Session, deps: T_AuthDeps):
     return await deps.service.sign_out(session_id=session.id)
 
 
-@router.get("/me", status_code=HTTPStatus.OK, response_model=UserSchema)
-async def get_current_user(user: T_CurrentUser):
-    return user
+@router.get("/me", status_code=HTTPStatus.OK, response_model=UserWithInformationSchema)
+async def get_current_user(user: T_CurrentUser, deps: T_AuthDeps):
+    return await deps.service.get_me(user_id=user.id)
 
 
 @router.post("/resend-verification", status_code=HTTPStatus.OK)

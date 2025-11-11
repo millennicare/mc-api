@@ -59,6 +59,6 @@ class UserService:
             )
 
         user_info = await self.user_info_repository.create_user_info(
-            user_id=user_id, body=body
+            user_id=existing_user.id, body=body
         )
         return UserInformation.model_validate(user_info)
