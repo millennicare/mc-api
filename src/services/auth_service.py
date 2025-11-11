@@ -59,7 +59,7 @@ class AuthService:
             )
 
         values = CreateUserSchema.model_validate(
-            {"name": body.name, "email": body.email, "email_verified": False}
+            {"first_name": body.first_name, "last_name": body.last_name, "email": body.email, "email_verified": False}
         )
         user = await self.user_repository.create_user(values=values)
         self.logger.info(f"AuthService.sign_up . Created user {body.email}")
