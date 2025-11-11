@@ -26,7 +26,7 @@ class UserRepository:
 
         return result.scalar_one_or_none()
 
-    async def get_user_with_information(self, user_id: UUID):
+    async def get_user_with_information(self, user_id: UUID) -> User | None:
         start = perf_counter()
 
         statement = (
@@ -39,7 +39,7 @@ class UserRepository:
             f"UserRepository.get_user_with_information took {elapsed_ms:.2f}ms"
         )
 
-        return result.scalar_one()
+        return result.scalar_one_or_none()
 
     async def create_user(self, values: CreateUserSchema) -> User:
         start = perf_counter()
