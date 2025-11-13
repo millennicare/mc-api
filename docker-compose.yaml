@@ -10,12 +10,31 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mc-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    command: >
+          sh -c "
+            dotenvx run -- /app/.venv/bin/alembic upgrade head &&
+            dotenvx run -- /app/.venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4
+          "
 
 volumes:
   postgres_data:
