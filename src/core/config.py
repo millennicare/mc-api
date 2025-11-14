@@ -44,9 +44,22 @@ class JWTSettings(Base):
     secret_key: str = Field(validation_alias="SECRET_KEY")
 
 
+class GoogleOAuthSettings(Base):
+    google_client_id: str = Field(validation_alias="GOOGLE_CLIENT_ID")
+    google_client_secret: str = Field(validation_alias="GOOGLE_CLIENT_SECRET")
+    google_redirect_url: str = Field(validation_alias="GOOGLE_REDIRECT_URL")
+
+
+class CacheSettings(Base):
+    redis_host: str = Field(validation_alias="REDIS_HOST", default="localhost")
+    redis_port: int = Field(validation_alias="REDIS_PORT", default=6379)
+
+
 base_settings = Base()
 database_settings = DatabaseSettings()
 email_settings = EmailSettings()
 storage_settings = StorageSettings()
 maps_settings = MapsSettings()
 jwt_settings = JWTSettings()
+google_oauth_settings = GoogleOAuthSettings()
+cache_settings = CacheSettings()

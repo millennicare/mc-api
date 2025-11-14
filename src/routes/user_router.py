@@ -1,16 +1,20 @@
+from datetime import datetime
 from http import HTTPStatus
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, File, Form, Path, Query, UploadFile
+from pydantic import AfterValidator
+from pydantic_extra_types.phone_numbers import PhoneNumber
 
 from src.core.dependencies.user_dependencies import T_UserDeps
 from src.core.deps import T_CurrentUser
+from src.models.user_information import UserGenderEnum
 from src.schemas.user_schemas import (
-    OnboardUserSchema,
     UpdateUserSchema,
     UserInformation,
     UserSchema,
+    is_over_eighteen,
 )
 
 router = APIRouter(tags=["user"], prefix="/users")
@@ -51,23 +55,18 @@ async def get_user(
 
 
 @router.post("/onboard", status_code=HTTPStatus.CREATED, response_model=UserInformation)
-async def onboard_user(user: T_CurrentUser, deps: T_UserDeps, body: OnboardUserSchema):
-    return await deps.service.onboard_user(user_id=user.id, body=body)
-
-
-# Leaving these in as examples on how to perform the file upload later for careseeker and caregiver onboarding
-# @router.post("/temp")
-# async def upload_file(
-#     file: Annotated[UploadFile, File(description="Profile picture")], deps: T_UserDeps
-# ):
-#     await deps.storage_client.upload_file(file=file, key="123")
-
-
-# @router.get("/temp/{file_id}")
-# async def get_file(file_id: str, deps: T_UserDeps):
-#     return deps.storage_client.get_presigned_url(file_id)
-
-
-# @router.delete("/temp/{file_id}")
-# async def delete_file(file_id: str, deps: T_UserDeps):
-#     deps.storage_client.delete_file(file_id)
+async def onboard_user(
+    user: T_CurrentUser,
+    deps: T_UserDeps,
+    gender: Annotated[UserGenderEnum, Form()],
+    phone_number: Annotated[PhoneNumber, Form()],
+    birthdate: Annotated[datetime, AfterValidator(is_over_eighteen)],
+    profile_picture: Annotated[UploadFile, File()],
+):
+    return await deps.service.onboard_user(
+        user_id=user.id,
+        gender=gender,
+        phone_number=phone_number,
+        birthdate=birthdate,
+        profile_picture=profile_picture,
+    )

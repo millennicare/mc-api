@@ -20,3 +20,20 @@ class CreateAccountSchema(BaseModel):
 
 class Account(CreateAccountSchema):
     id: UUID
+
+
+class UpdateAccountSchema(BaseModel):
+    """All fields optional - only provided fields will be updated"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    account_id: str | None = None
+    provider_id: str | None = None
+    user_id: UUID | None = None
+    access_token: str | None = None
+    refresh_token: str | None = None
+    id_token: str | None = None
+    access_token_expires_at: int | None = None
+    refresh_token_expires_at: int | None = None
+    scope: str | None = None
+    password: str | None = None

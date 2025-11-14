@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from src.clients.cache import CacheClient
 from src.clients.email import EmailClient
 from src.clients.token import JWTClient
 from src.core.config import email_settings
@@ -29,6 +30,7 @@ class AuthDependencies:
             api_key=email_settings.resend_api_key, from_email=email_settings.from_email
         )
         self.jwt_client = JWTClient()
+        self.cache_client = CacheClient()
         self.service = AuthService(
             account_repository=self.account_repository,
             user_repository=self.user_repository,
@@ -39,6 +41,7 @@ class AuthDependencies:
             email_client=self.email_client,
             jwt_client=self.jwt_client,
             user_info_repository=self.user_info_repository,
+            cache_client=self.cache_client,
         )
 
 

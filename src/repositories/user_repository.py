@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from src.core.deps import T_Database
 from src.core.logger import setup_logger
 from src.models.user import User
-from src.schemas.user_schemas import CreateUserSchema
+from src.schemas.user_schemas import CreateUserSchema, UpdateUserSchema
 
 
 class UserRepository:
@@ -18,26 +18,13 @@ class UserRepository:
     async def get_user(self, user_id: UUID) -> User | None:
         start = perf_counter()
 
-        statement = select(User).where(User.id == user_id)
-        result = await self.db.execute(statement)
-
-        elapsed_ms = (perf_counter() - start) * 1000
-        self.logger.info(f"UserRepository.get_user took {elapsed_ms:.2f}ms")
-
-        return result.scalar_one_or_none()
-
-    async def get_user_with_information(self, user_id: UUID) -> User | None:
-        start = perf_counter()
-
         statement = (
             select(User).options(joinedload(User.user_info)).where(User.id == user_id)
         )
         result = await self.db.execute(statement)
 
         elapsed_ms = (perf_counter() - start) * 1000
-        self.logger.info(
-            f"UserRepository.get_user_with_information took {elapsed_ms:.2f}ms"
-        )
+        self.logger.info(f"UserRepository.get_user took {elapsed_ms:.2f}ms")
 
         return result.scalar_one_or_none()
 
@@ -84,11 +71,17 @@ class UserRepository:
 
         return list(result.all())
 
-    async def update_user(self, user_id: UUID, values: dict) -> User:
+    async def update_user(self, user_id: UUID, values: UpdateUserSchema) -> User:
         start = perf_counter()
 
+        update_data = values.model_dump(
+            exclude_unset=True,
+            exclude_none=True,
+            exclude={"roles_to_add", "roles_to_remove"},
+        )
+
         statement = (
-            update(User).where(User.id == user_id).values(**values).returning(User)
+            update(User).where(User.id == user_id).values(**update_data).returning(User)
         )
         result = await self.db.execute(statement)
         await self.db.commit()

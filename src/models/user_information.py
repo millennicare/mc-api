@@ -35,8 +35,9 @@ class UserInformation(Base):
     phone_number: Mapped[str] = mapped_column(String, nullable=False)
     birthdate: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     gender: Mapped[UserGenderEnum] = mapped_column(Enum(UserGenderEnum), nullable=False)
+    profile_picture: Mapped[str] = mapped_column(String, nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="user_info")
 
     def __repr__(self) -> str:
-        return f"<UserInformation(id={self.id}, user_id={self.user_id}, phone_number={self.phone_number}, birthdate={self.birthdate}, gender={self.gender})>"
+        return f"<UserInformation(id={self.id}, user_id={self.user_id}, phone_number={self.phone_number}, birthdate={self.birthdate}, gender={self.gender}, profile_picture={self.profile_picture})>"
