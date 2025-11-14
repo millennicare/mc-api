@@ -310,7 +310,7 @@ class AuthService:
 
     async def initiate_oauth_login(
         self,
-        provider: Literal["google"],
+        provider: Literal["apple", "google"],
         role: Literal["careseeker", "caregiver"],
     ) -> dict[str, str]:
         """Initiate OAuth2 flow with provider"""
