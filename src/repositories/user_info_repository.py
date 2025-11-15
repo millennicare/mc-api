@@ -6,7 +6,7 @@ from sqlalchemy import insert, select
 from src.core.deps import T_Database
 from src.core.logger import setup_logger
 from src.models.user_information import UserInformation
-from src.schemas.user_schemas import OnboardUserSchema
+from src.schemas.user_schemas import CreateUserInformationSchema
 
 logger = setup_logger(__name__)
 
@@ -16,7 +16,7 @@ class UserInfoRepository:
         self.db = db
 
     async def create_user_info(
-        self, user_id: UUID, body: OnboardUserSchema
+        self, user_id: UUID, body: CreateUserInformationSchema
     ) -> UserInformation:
         start = perf_counter()
 

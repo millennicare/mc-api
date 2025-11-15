@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from src.clients.storage import StorageClient
 from src.core.deps import T_Database
 from src.repositories.user_info_repository import UserInfoRepository
 from src.repositories.user_repository import UserRepository
@@ -15,6 +16,7 @@ class UserDependencies:
         self.service = UserService(
             user_repository=self.user_repository,
             user_info_repository=self.user_info_repository,
+            storage_client=StorageClient(),
         )
 
 

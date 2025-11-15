@@ -30,6 +30,10 @@ class AddRoleToUserSchema(BaseModel):
 
 
 class UpdateUserSchema(BaseModel):
+    model_config = ConfigDict(
+        from_attributes=True, populate_by_name=True, extra="ignore"
+    )
+
     first_name: str | None = Field(alias="firstName", default=None)
     last_name: str | None = Field(alias="lastName", default=None)
     email: EmailStr | None = None
@@ -52,15 +56,16 @@ def is_over_eighteen(v: datetime):
     return v
 
 
-class OnboardUserSchema(BaseModel):
+class CreateUserInformationSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     gender: UserGenderEnum
     phone_number: PhoneNumber = Field(alias="phoneNumber")
     birthdate: Annotated[datetime, AfterValidator(is_over_eighteen)]
+    profile_picture: str = Field(alias="profilePicture")
 
 
-class UserInformation(OnboardUserSchema):
+class UserInformation(CreateUserInformationSchema):
     id: UUID
     user_id: UUID = Field(alias="userId")
     created_at: datetime = Field(alias="createdAt")
@@ -69,3 +74,7 @@ class UserInformation(OnboardUserSchema):
 
 class UserWithInformationSchema(UserSchema):
     user_info: UserInformation | None = Field(alias="profile", default=None)
+
+
+class UpdateUserInformationSchema(BaseModel):
+    pass

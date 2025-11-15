@@ -12,8 +12,8 @@ class Account(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID, primary_key=True, default=lambda: uuid.uuid4()
     )
-    account_id: Mapped[str] = mapped_column(String)
-    provider_id: Mapped[str] = mapped_column(String)
+    account_id: Mapped[str] = mapped_column(String, index=True)
+    provider_id: Mapped[str] = mapped_column(String, index=True)
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("user.id", ondelete="CASCADE", onupdate="CASCADE"),
