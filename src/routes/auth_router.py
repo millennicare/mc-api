@@ -68,10 +68,6 @@ async def oauth_callback(
     provider: Literal["google", "apple"],
     code: Annotated[str, Query(description="Authorization code from provider")],
     state: Annotated[str, Query(description="State parameter for CSRF protection")],
-    role: Annotated[
-        Literal["careseeker", "caregiver"],
-        Query(description="The role they are signing in or up for"),
-    ],
     deps: T_AuthDeps,
 ):
     """
@@ -79,7 +75,7 @@ async def oauth_callback(
     Exchanges code for tokens, creates/updates user, returns your app's tokens.
     """
     return await deps.service.handle_oauth_callback(
-        provider=provider, code=code, state=state, role=role
+        provider=provider, code=code, state=state
     )
 
 

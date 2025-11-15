@@ -313,19 +313,18 @@ class AuthService:
         provider: Literal["apple", "google"],
         role: Literal["careseeker", "caregiver"],
     ) -> dict[str, str]:
-        """Initiate OAuth2 flow with provider"""
         if provider != "google":
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST,
                 detail=f"Provider '{provider}' is not supported",
             )
 
-        # Generate and cache state for CSRF protection
+        # Generate state and store role with it
         state = secrets.token_urlsafe(32)
         await self.cache_client.set(
             key=f"oauth_state:{state}",
-            value=state,
-            expires=600,  # 10 minutes
+            value=role,  # Store the role as the value
+            expires=600,
         )
 
         # Build authorization URL
@@ -347,17 +346,29 @@ class AuthService:
         provider: Literal["apple", "google"],
         code: str,
         state: str,
-        role: Literal["careseeker", "caregiver"],
     ) -> TokenResponse:
-        """Handle OAuth2 callback and create/update user"""
         if provider != "google":
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST,
                 detail=f"Provider '{provider}' is not supported",
             )
 
-        # Validate state (CSRF protection)
-        await self._validate_oauth_state(state)
+        # Validate state and retrieve role
+        cached_role = await self.cache_client.get(f"oauth_state:{state}")
+        if not cached_role:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail="Invalid or expired state parameter",
+            )
+
+        # Validate role
+        if cached_role != "careseeker" and cached_role != "caregiver":
+            raise HTTPException(
+                detail="Invalid role", status_code=HTTPStatus.BAD_REQUEST
+            )
+
+        # Delete the state to prevent reuse
+        await self.cache_client.delete(f"oauth_state:{state}")
 
         # Exchange code for tokens
         token_data = await self._exchange_code_for_token(code)
@@ -370,7 +381,7 @@ class AuthService:
             user_info=user_info,
             token_data=token_data,
             provider=provider,
-            role=role,
+            role=cached_role,
         )
 
         # Create session and tokens
